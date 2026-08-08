@@ -24,4 +24,6 @@ public sealed class AppSettings
     public string LongFixedHeight { get; set; } = "1200";
     public string LongCustomHeights { get; set; } = "800\n1200\n950";
     public int ConflictPolicyIndex { get; set; }
+    public string SmartTargetHeight { get; set; } = "1200";
+    public string SmartSearchRange { get; set; } = "240";
 }

@@ -238,6 +238,64 @@ public static class ImageProcessingService
         return crop;
     }
 
+    public static List<CropRegion> SuggestLongImageSlices(BitmapSource source, int targetHeight, int searchRange)
+    {
+        if (targetHeight < 40) throw new ArgumentException("目标高度不能小于 40px。");
+        searchRange = Math.Clamp(searchRange, 10, Math.Max(10, targetHeight / 2));
+        int width = source.PixelWidth, height = source.PixelHeight, stride = width * 4;
+        var pixels = new byte[stride * height];
+        source.CopyPixels(pixels, stride, 0);
+        Color background = EstimateOuterBackground(pixels, width, height, stride);
+        int xStep = Math.Max(1, width / 500);
+        var rowActivity = new double[height];
+        for (int y = 0; y < height; y++)
+        {
+            int foreground = 0, samples = 0;
+            for (int x = 0; x < width; x += xStep)
+            {
+                int p = y * stride + x * 4;
+                int delta = Math.Max(Math.Abs(pixels[p + 2] - background.R),
+                    Math.Max(Math.Abs(pixels[p + 1] - background.G), Math.Abs(pixels[p] - background.B)));
+                if (delta > 15) foreground++;
+                samples++;
+            }
+            rowActivity[y] = foreground / (double)Math.Max(1, samples);
+        }
+
+        var smooth = new double[height];
+        const int band = 5;
+        for (int y = 0; y < height; y++)
+        {
+            int top = Math.Max(0, y - band), bottom = Math.Min(height - 1, y + band);
+            double sum = 0;
+            for (int row = top; row <= bottom; row++) sum += rowActivity[row];
+            smooth[y] = sum / (bottom - top + 1);
+        }
+
+        var boundaries = new List<int> { 0 };
+        int current = 0;
+        int minimumSegment = Math.Max(40, targetHeight / 3);
+        while (height - current > targetHeight + minimumSegment)
+        {
+            int desired = current + targetHeight;
+            int from = Math.Max(current + minimumSegment, desired - searchRange);
+            int to = Math.Min(height - minimumSegment, desired + searchRange);
+            if (from >= to) break;
+            int best = from;
+            double bestScore = double.MaxValue;
+            for (int y = from; y <= to; y++)
+            {
+                double distancePenalty = Math.Abs(y - desired) / (double)searchRange * .025;
+                double score = smooth[y] + distancePenalty;
+                if (score < bestScore) { bestScore = score; best = y; }
+            }
+            boundaries.Add(best); current = best;
+        }
+        boundaries.Add(height);
+        return boundaries.Zip(boundaries.Skip(1), (top, bottom) => new Rect(0, top, width, bottom - top))
+            .Select((bounds, index) => new CropRegion { Number = index + 1, Bounds = bounds }).ToList();
+    }
+
     public static void Save(BitmapSource image, string path, string format, int jpegQuality)
     {
         BitmapEncoder encoder = format.Equals("JPG", StringComparison.OrdinalIgnoreCase)

@@ -90,7 +90,10 @@ public partial class App : Application
         int[] custom = mode == 2
             ? value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray()
             : [];
-        var regions = CutPic.MainWindow.BuildLongRegions(bitmap.PixelWidth, bitmap.PixelHeight, mode, count, fixedHeight, custom);
+        var regions = mode == 3
+            ? ImageProcessingService.SuggestLongImageSlices(bitmap,
+                int.Parse(value.Split(',')[0]), int.Parse(value.Split(',')[1]))
+            : CutPic.MainWindow.BuildLongRegions(bitmap.PixelWidth, bitmap.PixelHeight, mode, count, fixedHeight, custom);
         string name = Path.GetFileNameWithoutExtension(inputPath);
         for (int i = 0; i < regions.Count; i++)
         {

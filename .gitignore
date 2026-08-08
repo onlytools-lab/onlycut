@@ -23,6 +23,7 @@ startup-fix-regression/
 long-smoke/
 long-mode-regression/
 phase1-regression/
+smart-split-regression/
 
 # OS files
 Thumbs.db

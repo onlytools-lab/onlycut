@@ -381,6 +381,8 @@ public partial class MainWindow : Window
         int longCount = int.TryParse(LongCountBox.Text, out var parsedCount) ? parsedCount : 3;
         int longFixedHeight = int.TryParse(LongFixedHeightBox.Text, out var parsedHeight) ? parsedHeight : 1200;
         int[] longCustomHeights = ParseHeightList(LongCustomHeightsBox.Text).ToArray();
+        int smartTargetHeight = int.TryParse(SmartTargetHeightBox.Text, out var parsedTarget) ? parsedTarget : 1200;
+        int smartSearchRange = int.TryParse(SmartSearchRangeBox.Text, out var parsedRange) ? parsedRange : 240;
         try
         {
             IsEnabled = false;
@@ -394,7 +396,9 @@ public partial class MainWindow : Window
                     var regions = _regionStates.TryGetValue(task.Path, out var saved)
                         ? saved
                         : isLongTask
-                            ? BuildLongRegions(bitmap.PixelWidth, bitmap.PixelHeight, longSplitMode, longCount, longFixedHeight, longCustomHeights)
+                            ? longSplitMode == 3
+                                ? ImageProcessingService.SuggestLongImageSlices(bitmap, smartTargetHeight, smartSearchRange)
+                                : BuildLongRegions(bitmap.PixelWidth, bitmap.PixelHeight, longSplitMode, longCount, longFixedHeight, longCustomHeights)
                             : DetectUsingOptions(bitmap, detectionOptions).ToList();
                     var validationErrors = ValidateRegions(bitmap, regions, isLongTask);
                     if (validationErrors.Count > 0)
@@ -519,6 +523,7 @@ public partial class MainWindow : Window
         LongCountBox.Visibility = LongSplitModeBox.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
         LongFixedHeightBox.Visibility = LongSplitModeBox.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
         LongCustomHeightsBox.Visibility = LongSplitModeBox.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+        SmartLongOptionsPanel.Visibility = LongSplitModeBox.SelectedIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void GenerateLongSlices_Click(object sender, RoutedEventArgs e) => GenerateLongSlices(true);
@@ -532,7 +537,11 @@ public partial class MainWindow : Window
         int[] custom = ParseHeightList(LongCustomHeightsBox.Text).ToArray();
         try
         {
-            var generated = BuildLongRegions(_bitmap.PixelWidth, _bitmap.PixelHeight, mode, count, fixedHeight, custom);
+            int smartTarget = int.TryParse(SmartTargetHeightBox.Text, out var target) ? target : 1200;
+            int smartRange = int.TryParse(SmartSearchRangeBox.Text, out var range) ? range : 240;
+            var generated = mode == 3
+                ? ImageProcessingService.SuggestLongImageSlices(_bitmap, smartTarget, smartRange)
+                : BuildLongRegions(_bitmap.PixelWidth, _bitmap.PixelHeight, mode, count, fixedHeight, custom);
             if (pushHistory && _regions.Count > 0) PushHistory();
             _regions = generated;
             if (_sourcePath is not null)
@@ -569,7 +578,7 @@ public partial class MainWindow : Window
             int remaining = totalHeight;
             while (remaining > 0) { int h = Math.Min(fixedHeight, remaining); heights.Add(h); remaining -= h; }
         }
-        else
+        else if (mode == 2)
         {
             if (customHeights.Count == 0) throw new ArgumentException("请至少输入一个自定义高度，每行一个数字。");
             int used = 0;
@@ -582,6 +591,7 @@ public partial class MainWindow : Window
             }
             heights.Add(totalHeight - used);
         }
+        else throw new ArgumentException("未知的长图切分方式。");
 
         var result = new List<CropRegion>();
         int y = 0;
@@ -851,10 +861,12 @@ public partial class MainWindow : Window
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
-            LongSplitModeBox.SelectedIndex = Math.Clamp(settings.LongSplitModeIndex, 0, 2);
+            LongSplitModeBox.SelectedIndex = Math.Clamp(settings.LongSplitModeIndex, 0, 3);
             LongCountBox.Text = settings.LongSliceCount;
             LongFixedHeightBox.Text = settings.LongFixedHeight;
             LongCustomHeightsBox.Text = settings.LongCustomHeights;
+            SmartTargetHeightBox.Text = settings.SmartTargetHeight;
+            SmartSearchRangeBox.Text = settings.SmartSearchRange;
             UpdateWorkModeUi();
             SetZoom(settings.Zoom);
         }
@@ -877,7 +889,8 @@ public partial class MainWindow : Window
                 MinimumAreaPercent = MinimumAreaBox.Text, ObjectPadding = ObjectPaddingBox.Text,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
-                LongCustomHeights = LongCustomHeightsBox.Text
+                LongCustomHeights = LongCustomHeightsBox.Text,
+                SmartTargetHeight = SmartTargetHeightBox.Text, SmartSearchRange = SmartSearchRangeBox.Text
             };
             File.WriteAllText(SettingsPath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
         }
