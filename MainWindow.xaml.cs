@@ -10,12 +10,19 @@ using CutPic.Models;
 using CutPic.Services;
 using System.IO;
 using System.Text.Json;
+using System.Windows.Threading;
 
 namespace CutPic;
 
 public partial class MainWindow : Window
 {
-    private sealed record ImageTask(string Path, string Name);
+    private sealed class ImageTask(string path, string name)
+    {
+        public string Path { get; } = path;
+        public string Name { get; } = name;
+        public string Status { get; set; } = "待检查";
+        public override string ToString() => $"{(Status == "已导出" ? "↑" : Status == "已确认" ? "✓" : Status == "异常" ? "!" : "○")}  {Name}";
+    }
     private readonly record struct DetectionOptions(int Mode, double Sensitivity, int Grouping, double MinimumArea, int Padding);
     private sealed class EditHistory
     {
@@ -36,6 +43,8 @@ public partial class MainWindow : Window
     private DragMode _dragMode;
     private double _zoom = 1;
     private bool _suppressWorkModeChange;
+    private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
+    private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
     private enum DragMode { None, Move, Resize }
 
@@ -43,15 +52,32 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         PreviewKeyDown += MainWindow_PreviewKeyDown;
-        Closing += (_, _) => SaveSettings();
+        Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
         LongSplitModeBox_SelectionChanged(this, null!);
+        _recoveryTimer.Tick += (_, _) => SaveRecoveryProject();
+        _recoveryTimer.Start();
+        Dispatcher.BeginInvoke(() => RestoreRecoveryProject(), DispatcherPriority.ApplicationIdle);
     }
 
     private void Open_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog { Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp|所有文件|*.*", Multiselect = true };
         if (dialog.ShowDialog() == true) AddFiles(dialog.FileNames);
+    }
+
+    private void ImportFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "选择包含图片的文件夹" };
+        if (dialog.ShowDialog() != true) return;
+        string[] extensions = [".png", ".jpg", ".jpeg", ".bmp", ".webp"];
+        var files = Directory.EnumerateFiles(dialog.FolderName, "*.*", new EnumerationOptions
+            { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.System })
+            .Where(path => extensions.Contains(System.IO.Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            .OrderBy(path => path, StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
+        AddFiles(files);
+        StatusText.Text = files.Length == 0 ? "文件夹中没有找到支持的图片" : $"已从文件夹导入 {files.Length} 张图片";
     }
 
     private void AddFiles(IEnumerable<string> paths)
@@ -66,6 +92,94 @@ public partial class MainWindow : Window
         }
         if (firstAdded is not null) TaskList.SelectedItem = firstAdded;
         StatusText.Text = $"任务队列中共有 {_tasks.Count} 张图片";
+    }
+
+    private void SaveProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "保存 CutPic 项目", Filter = "CutPic 项目|*.cutpic|JSON 文件|*.json",
+            DefaultExt = ".cutpic", FileName = _currentProjectPath is null ? "CutPic项目.cutpic" : System.IO.Path.GetFileName(_currentProjectPath)
+        };
+        if (dialog.ShowDialog() != true) return;
+        SaveProjectDocument(dialog.FileName);
+        _currentProjectPath = dialog.FileName;
+        StatusText.Text = $"项目已保存：{dialog.FileName}";
+    }
+
+    private void OpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog { Title = "打开 CutPic 项目", Filter = "CutPic 项目|*.cutpic;*.json|所有文件|*.*" };
+        if (dialog.ShowDialog() != true) return;
+        try { LoadProjectDocument(dialog.FileName); _currentProjectPath = dialog.FileName; }
+        catch (Exception ex)
+        { MessageBox.Show(this, $"项目文件无法打开：\n{ex.Message}", "打开项目失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private static string LocalDataDirectory => Environment.GetEnvironmentVariable("CUTPIC_DATA_DIR")
+        ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CutPic");
+    private static string RecoveryProjectPath => System.IO.Path.Combine(LocalDataDirectory, "last-session.cutpic");
+
+    private ProjectDocument BuildProjectDocument() => new()
+    {
+        SavedAt = DateTimeOffset.Now,
+        Tasks = _tasks.Select(task => new ProjectTaskDocument
+        {
+            ImagePath = task.Path,
+            IsLongMode = _longModeStates.TryGetValue(task.Path, out bool isLong) && isLong,
+            Status = task.Status,
+            Regions = (_regionStates.TryGetValue(task.Path, out var regions) ? regions : [])
+                .Select(region => new CropBoundsDocument
+                {
+                    X = region.Bounds.X, Y = region.Bounds.Y,
+                    Width = region.Bounds.Width, Height = region.Bounds.Height
+                }).ToList()
+        }).ToList()
+    };
+
+    private void SaveProjectDocument(string path)
+    {
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(BuildProjectDocument(), new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private void SaveRecoveryProject()
+    { try { SaveProjectDocument(RecoveryProjectPath); } catch { } }
+
+    private void RestoreRecoveryProject()
+    {
+        if (_tasks.Count > 0 || !File.Exists(RecoveryProjectPath)) return;
+        try
+        {
+            var document = JsonSerializer.Deserialize<ProjectDocument>(File.ReadAllText(RecoveryProjectPath));
+            if (document?.Tasks.Count > 0) LoadProjectDocument(RecoveryProjectPath, true);
+        }
+        catch { }
+    }
+
+    private void LoadProjectDocument(string path, bool isRecovery = false)
+    {
+        var document = JsonSerializer.Deserialize<ProjectDocument>(File.ReadAllText(path))
+            ?? throw new InvalidDataException("项目文件内容为空或格式无效。");
+        TaskList.Items.Clear(); _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
+        int missing = 0;
+        foreach (var savedTask in document.Tasks)
+        {
+            if (!File.Exists(savedTask.ImagePath)) { missing++; continue; }
+            var task = new ImageTask(savedTask.ImagePath, System.IO.Path.GetFileName(savedTask.ImagePath)) { Status = savedTask.Status };
+            _tasks.Add(task); TaskList.Items.Add(task); _longModeStates[task.Path] = savedTask.IsLongMode;
+            if (savedTask.Regions.Count > 0)
+                _regionStates[task.Path] = savedTask.Regions.Select((bounds, index) => new CropRegion
+                {
+                    Number = index + 1,
+                    Bounds = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height)
+                }).ToList();
+        }
+        TaskList.Items.Refresh();
+        if (_tasks.Count > 0) TaskList.SelectedIndex = 0;
+        StatusText.Text = isRecovery
+            ? $"已自动恢复上次会话：{_tasks.Count} 个任务"
+            : $"项目已打开：{_tasks.Count} 个任务" + (missing > 0 ? $"，{missing} 个源文件缺失" : string.Empty);
     }
 
     private void LoadFile(string path)
@@ -261,6 +375,7 @@ public partial class MainWindow : Window
         int outputSize = int.TryParse(((ComboBoxItem)SizeBox.SelectedItem).Tag?.ToString(), out int parsed) ? parsed : 512;
         bool autoBackground = AutoBackgroundBox.IsChecked == true;
         int jpegQuality = (int)QualitySlider.Value;
+        int conflictPolicy = ConflictPolicyBox.SelectedIndex;
         DetectionOptions detectionOptions = ReadDetectionOptions();
         int longSplitMode = LongSplitModeBox.SelectedIndex;
         int longCount = int.TryParse(LongCountBox.Text, out var parsedCount) ? parsedCount : 3;
@@ -281,6 +396,12 @@ public partial class MainWindow : Window
                         : isLongTask
                             ? BuildLongRegions(bitmap.PixelWidth, bitmap.PixelHeight, longSplitMode, longCount, longFixedHeight, longCustomHeights)
                             : DetectUsingOptions(bitmap, detectionOptions).ToList();
+                    var validationErrors = ValidateRegions(bitmap, regions, isLongTask);
+                    if (validationErrors.Count > 0)
+                    {
+                        task.Status = "异常";
+                        throw new InvalidDataException($"{task.Name} 导出检查失败：{string.Join("；", validationErrors)}");
+                    }
                     string baseName = System.IO.Path.GetFileNameWithoutExtension(task.Path);
                     for (int i = 0; i < regions.Count; i++)
                     {
@@ -288,17 +409,61 @@ public partial class MainWindow : Window
                             ? ImageProcessingService.CreateCrop(bitmap, regions[i].Bounds)
                             : ImageProcessingService.CreateSquare(bitmap, regions[i].Bounds, outputSize, autoBackground, Colors.White);
                         string suffix = isLongTask ? $"_part_{i + 1:00}" : $"_{i + 1:00}";
-                        string path = System.IO.Path.Combine(dialog.FolderName, $"{baseName}{suffix}{extension}");
+                        string requestedPath = System.IO.Path.Combine(dialog.FolderName, $"{baseName}{suffix}{extension}");
+                        string? path = ResolveOutputPath(requestedPath, conflictPolicy);
+                        if (path is null) continue;
                         ImageProcessingService.Save(output, path, format, jpegQuality);
                         total++;
                     }
+                    task.Status = "已导出";
                 }
             });
+            TaskList.Items.Refresh();
             StatusText.Text = $"批量导出完成：{_tasks.Count} 个任务，共 {total} 张商品图";
             MessageBox.Show(this, $"已从 {_tasks.Count} 张宫格图中导出 {total} 张正方形商品图。", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        catch (Exception ex) { MessageBox.Show(this, $"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { TaskList.Items.Refresh(); MessageBox.Show(this, $"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { IsEnabled = true; }
+    }
+
+    private static List<string> ValidateRegions(BitmapSource bitmap, IReadOnlyList<CropRegion> regions, bool longMode)
+    {
+        var errors = new List<string>();
+        if (regions.Count == 0) { errors.Add("没有可导出的切片"); return errors; }
+        const double epsilon = .01;
+        foreach (var region in regions)
+        {
+            var bounds = region.Bounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0) errors.Add($"切片 {region.Number} 尺寸无效");
+            if (bounds.X < -epsilon || bounds.Y < -epsilon || bounds.Right > bitmap.PixelWidth + epsilon || bounds.Bottom > bitmap.PixelHeight + epsilon)
+                errors.Add($"切片 {region.Number} 超出图片范围");
+        }
+        if (!longMode) return errors.Distinct().ToList();
+        var ordered = regions.OrderBy(r => r.Bounds.Y).ToList();
+        if (Math.Abs(ordered[0].Bounds.Y) > epsilon) errors.Add("长图顶部未被覆盖");
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            if (Math.Abs(ordered[i].Bounds.X) > epsilon || Math.Abs(ordered[i].Bounds.Width - bitmap.PixelWidth) > epsilon)
+                errors.Add($"切片 {ordered[i].Number} 未保持 100% 原图宽度");
+            if (i > 0 && Math.Abs(ordered[i - 1].Bounds.Bottom - ordered[i].Bounds.Y) > epsilon)
+                errors.Add($"切片 {ordered[i - 1].Number} 与 {ordered[i].Number} 之间存在间距或重叠");
+        }
+        if (Math.Abs(ordered[^1].Bounds.Bottom - bitmap.PixelHeight) > epsilon) errors.Add("长图底部未被完整覆盖");
+        return errors.Distinct().ToList();
+    }
+
+    private static string? ResolveOutputPath(string requestedPath, int policy)
+    {
+        if (!File.Exists(requestedPath) || policy == 1) return requestedPath;
+        if (policy == 2) return null;
+        string directory = System.IO.Path.GetDirectoryName(requestedPath)!;
+        string name = System.IO.Path.GetFileNameWithoutExtension(requestedPath);
+        string extension = System.IO.Path.GetExtension(requestedPath);
+        for (int number = 1; ; number++)
+        {
+            string candidate = System.IO.Path.Combine(directory, $"{name} ({number}){extension}");
+            if (!File.Exists(candidate)) return candidate;
+        }
     }
 
     private void GenerateGrid_Click(object sender, RoutedEventArgs e)
@@ -455,6 +620,14 @@ public partial class MainWindow : Window
         _suppressWorkModeChange = false;
         UpdateWorkModeUi();
         LoadFile(task.Path);
+    }
+
+    private void ConfirmTask_Click(object sender, RoutedEventArgs e)
+    {
+        if (TaskList.SelectedItem is not ImageTask task) return;
+        task.Status = "已确认"; TaskList.Items.Refresh();
+        StatusText.Text = $"已确认任务：{task.Name}";
+        SaveRecoveryProject();
     }
 
     private void RemoveTask_Click(object sender, RoutedEventArgs e)
@@ -656,7 +829,7 @@ public partial class MainWindow : Window
         ZoomTextButton.Content = $"{_zoom:P0}";
     }
 
-    private static string SettingsPath => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CutPic", "settings.json");
+    private static string SettingsPath => System.IO.Path.Combine(LocalDataDirectory, "settings.json");
     private void LoadSettings()
     {
         try
@@ -666,6 +839,7 @@ public partial class MainWindow : Window
             if (settings is null) return;
             SizeBox.SelectedIndex = Math.Clamp(settings.OutputSizeIndex, 0, SizeBox.Items.Count - 1);
             FormatBox.SelectedIndex = Math.Clamp(settings.FormatIndex, 0, FormatBox.Items.Count - 1);
+            ConflictPolicyBox.SelectedIndex = Math.Clamp(settings.ConflictPolicyIndex, 0, ConflictPolicyBox.Items.Count - 1);
             QualitySlider.Value = settings.JpegQuality; AutoBackgroundBox.IsChecked = settings.AutoBackground;
             RowsBox.Text = settings.Rows; ColumnsBox.Text = settings.Columns;
             MarginXBox.Text = settings.MarginX; MarginYBox.Text = settings.MarginY;
@@ -694,6 +868,7 @@ public partial class MainWindow : Window
             var settings = new AppSettings
             {
                 OutputSizeIndex = SizeBox.SelectedIndex, FormatIndex = FormatBox.SelectedIndex,
+                ConflictPolicyIndex = ConflictPolicyBox.SelectedIndex,
                 JpegQuality = QualitySlider.Value, AutoBackground = AutoBackgroundBox.IsChecked == true,
                 Rows = RowsBox.Text, Columns = ColumnsBox.Text, MarginX = MarginXBox.Text,
                 MarginY = MarginYBox.Text, GapX = GapXBox.Text, GapY = GapYBox.Text, Zoom = _zoom

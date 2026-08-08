@@ -31,6 +31,15 @@
           <Button Style="{StaticResource TopActionButton}" Click="Open_Click" ToolTip="添加图片">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="FolderOpen"/><TextBlock Text="添加图片" Margin="7,0,0,0"/></StackPanel>
           </Button>
+          <Button Style="{StaticResource TopActionButton}" Click="ImportFolder_Click" ToolTip="导入整个文件夹">
+            <materialDesign:PackIcon Kind="FolderMultipleImage"/>
+          </Button>
+          <Button Style="{StaticResource TopActionButton}" Click="OpenProject_Click" ToolTip="打开 CutPic 项目">
+            <materialDesign:PackIcon Kind="FolderCogOutline"/>
+          </Button>
+          <Button Style="{StaticResource TopActionButton}" Click="SaveProject_Click" ToolTip="保存 CutPic 项目">
+            <materialDesign:PackIcon Kind="ContentSaveOutline"/>
+          </Button>
           <Button Style="{StaticResource TopActionButton}" Click="Detect_Click" ToolTip="按当前参数重新识别">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="AutoFix"/><TextBlock Text="自动识别" Margin="7,0,0,0"/></StackPanel>
           </Button>
@@ -42,6 +51,9 @@
           </Button>
           <Button Style="{StaticResource TopActionButton}" Click="Undo_Click" ToolTip="撤销 Ctrl+Z"><materialDesign:PackIcon Kind="Undo"/></Button>
           <Button Style="{StaticResource TopActionButton}" Click="Redo_Click" ToolTip="重做 Ctrl+Y"><materialDesign:PackIcon Kind="Redo"/></Button>
+          <Button Style="{StaticResource TopActionButton}" Click="ConfirmTask_Click" ToolTip="标记当前任务已确认">
+            <materialDesign:PackIcon Kind="CheckCircleOutline"/>
+          </Button>
           <Button Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="12,0,0,0" Padding="18,10"
                   Background="{DynamicResource MaterialDesign.Brush.Secondary}" Foreground="#19111A">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="Export"/><TextBlock Text="导出全部" Margin="8,0,0,0" FontWeight="SemiBold"/></StackPanel>
@@ -76,7 +88,7 @@
             </Border>
           </StackPanel>
           <ListBox x:Name="TaskList" Background="Transparent" BorderThickness="0" SelectionChanged="TaskList_SelectionChanged"
-                   DisplayMemberPath="Name" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
         </DockPanel>
       </Border>
 
@@ -176,6 +188,12 @@
                 </ComboBox>
                 <ComboBox x:Name="FormatBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件格式" Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,12">
                   <ComboBoxItem Content="PNG"/><ComboBoxItem Content="JPG"/>
+                </ComboBox>
+                <ComboBox x:Name="ConflictPolicyBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件重名处理"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,12">
+                  <ComboBoxItem Content="自动追加序号"/>
+                  <ComboBoxItem Content="覆盖已有文件"/>
+                  <ComboBoxItem Content="跳过已有文件"/>
                 </ComboBox>
                 <DockPanel LastChildFill="False"><TextBlock Text="JPG 质量"/><TextBlock x:Name="QualityText" Text="92" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
                 <Slider x:Name="QualitySlider" Minimum="50" Maximum="100" Value="92" TickFrequency="1" ValueChanged="QualitySlider_ValueChanged" Margin="0,0,0,8"/>

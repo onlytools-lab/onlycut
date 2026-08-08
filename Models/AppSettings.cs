@@ -23,4 +23,5 @@ public sealed class AppSettings
     public string LongSliceCount { get; set; } = "3";
     public string LongFixedHeight { get; set; } = "1200";
     public string LongCustomHeights { get; set; } = "800\n1200\n950";
+    public int ConflictPolicyIndex { get; set; }
 }
