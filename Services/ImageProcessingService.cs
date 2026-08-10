@@ -238,6 +238,120 @@ public static class ImageProcessingService
         return crop;
     }
 
+    public static BitmapSource CreateTransparentSquare(BitmapSource source, Rect requestedBounds,
+        int outputSize, int tolerance, int feather)
+    {
+        var bounds = ClampToImage(requestedBounds, source.PixelWidth, source.PixelHeight);
+        int x = (int)Math.Round(bounds.X), y = (int)Math.Round(bounds.Y);
+        int width = Math.Max(1, Math.Min(source.PixelWidth - x, (int)Math.Round(bounds.Width)));
+        int height = Math.Max(1, Math.Min(source.PixelHeight - y, (int)Math.Round(bounds.Height)));
+        int sourceStride = source.PixelWidth * 4;
+        var all = new byte[sourceStride * source.PixelHeight];
+        source.CopyPixels(all, sourceStride, 0);
+        Color background = EstimateOuterBackground(all, source.PixelWidth, source.PixelHeight, sourceStride);
+
+        var crop = new byte[width * height * 4];
+        for (int row = 0; row < height; row++)
+            Buffer.BlockCopy(all, (y + row) * sourceStride + x * 4, crop, row * width * 4, width * 4);
+
+        tolerance = Math.Clamp(tolerance, 1, 100);
+        feather = Math.Clamp(feather, 1, 100);
+        int threshold = tolerance + feather;
+        var connected = new bool[width * height];
+        var queue = new int[connected.Length];
+        int head = 0, tail = 0;
+
+        bool IsBackgroundCandidate(int index)
+        {
+            int p = index * 4;
+            int delta = Math.Max(Math.Abs(crop[p + 2] - background.R),
+                Math.Max(Math.Abs(crop[p + 1] - background.G), Math.Abs(crop[p] - background.B)));
+            return delta <= tolerance;
+        }
+        void Seed(int index)
+        {
+            if (connected[index] || !IsBackgroundCandidate(index)) return;
+            connected[index] = true; queue[tail++] = index;
+        }
+        for (int xx = 0; xx < width; xx++) { Seed(xx); Seed((height - 1) * width + xx); }
+        for (int yy = 0; yy < height; yy++) { Seed(yy * width); Seed(yy * width + width - 1); }
+        while (head < tail)
+        {
+            int current = queue[head++], yy = current / width, xx = current - yy * width;
+            Visit(current - 1, xx > 0); Visit(current + 1, xx + 1 < width);
+            Visit(current - width, yy > 0); Visit(current + width, yy + 1 < height);
+        }
+        void Visit(int index, bool valid)
+        {
+            if (!valid || connected[index] || !IsBackgroundCandidate(index)) return;
+            connected[index] = true; queue[tail++] = index;
+        }
+
+        var edgeLevel = new byte[connected.Length];
+        head = 0;
+        int featherRadius = Math.Clamp(feather / 4, 1, 8);
+        while (head < tail)
+        {
+            int current = queue[head++], yy = current / width, xx = current - yy * width;
+            int level = connected[current] ? 0 : edgeLevel[current];
+            if (level >= featherRadius) continue;
+            Expand(current - 1, xx > 0); Expand(current + 1, xx + 1 < width);
+            Expand(current - width, yy > 0); Expand(current + width, yy + 1 < height);
+            void Expand(int index, bool valid)
+            {
+                if (!valid || connected[index] || edgeLevel[index] != 0) return;
+                int p = index * 4;
+                int delta = Math.Max(Math.Abs(crop[p + 2] - background.R),
+                    Math.Max(Math.Abs(crop[p + 1] - background.G), Math.Abs(crop[p] - background.B)));
+                if (delta > threshold) return;
+                edgeLevel[index] = (byte)(level + 1); queue[tail++] = index;
+            }
+        }
+
+        for (int index = 0; index < connected.Length; index++)
+        {
+            int p = index * 4;
+            if (connected[index])
+            {
+                crop[p] = crop[p + 1] = crop[p + 2] = crop[p + 3] = 0;
+                continue;
+            }
+            if (edgeLevel[index] == 0) continue;
+            int delta = Math.Max(Math.Abs(crop[p + 2] - background.R),
+                Math.Max(Math.Abs(crop[p + 1] - background.G), Math.Abs(crop[p] - background.B)));
+            double colorFactor = Math.Clamp((delta - tolerance) / (double)feather, 0, 1);
+            double spatialFactor = edgeLevel[index] / (double)(featherRadius + 1);
+            double alphaFactor = Math.Max(colorFactor, spatialFactor);
+            byte originalAlpha = crop[p + 3];
+            crop[p + 3] = (byte)Math.Round(originalAlpha * alphaFactor);
+            if (alphaFactor <= .001)
+            {
+                crop[p] = crop[p + 1] = crop[p + 2] = 0;
+            }
+            else if (alphaFactor < .999)
+            {
+                crop[p + 2] = Unmatte(crop[p + 2], background.R, alphaFactor);
+                crop[p + 1] = Unmatte(crop[p + 1], background.G, alphaFactor);
+                crop[p] = Unmatte(crop[p], background.B, alphaFactor);
+            }
+        }
+
+        int side = Math.Max(width, height), squareStride = side * 4;
+        var square = new byte[squareStride * side];
+        int offsetX = (side - width) / 2, offsetY = (side - height) / 2;
+        for (int row = 0; row < height; row++)
+            Buffer.BlockCopy(crop, row * width * 4, square,
+                (offsetY + row) * squareStride + offsetX * 4, width * 4);
+        var bitmap = BitmapSource.Create(side, side, source.DpiX, source.DpiY,
+            PixelFormats.Bgra32, null, square, squareStride);
+        if (outputSize <= 0 || outputSize == side) { bitmap.Freeze(); return bitmap; }
+        var scaled = new TransformedBitmap(bitmap, new ScaleTransform(outputSize / (double)side, outputSize / (double)side));
+        scaled.Freeze(); return scaled;
+
+        static byte Unmatte(byte composited, byte backgroundChannel, double alpha)
+            => (byte)Math.Clamp(Math.Round((composited - backgroundChannel * (1 - alpha)) / alpha), 0, 255);
+    }
+
     public static List<CropRegion> SuggestLongImageSlices(BitmapSource source, int targetHeight, int searchRange)
     {
         if (targetHeight < 40) throw new ArgumentException("目标高度不能小于 40px。");

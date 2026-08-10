@@ -24,6 +24,7 @@ long-smoke/
 long-mode-regression/
 phase1-regression/
 smart-split-regression/
+transparent-regression*/
 
 # OS files
 Thumbs.db

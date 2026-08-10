@@ -31,6 +31,12 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        if (e.Args.Length >= 3 && e.Args[0] == "--smoke-transparent")
+        {
+            RunTransparentSmokeTest(e.Args[1], e.Args[2]);
+            Shutdown();
+            return;
+        }
         try
         {
             new MainWindow().Show();
@@ -105,5 +111,32 @@ public partial class App : Application
             $"Slices={regions.Count}{Environment.NewLine}" +
             $"TotalHeight={regions.Sum(r => r.Bounds.Height)}{Environment.NewLine}" +
             string.Join(Environment.NewLine, regions.Select(r => $"{r.Number}: {r.Bounds}")));
+    }
+
+    private static void RunTransparentSmokeTest(string inputPath, string outputDirectory)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var bitmap = ImageProcessingService.LoadImage(inputPath);
+        var regions = ImageProcessingService.DetectObjects(bitmap, 60, 40, .06, 18);
+        string name = Path.GetFileNameWithoutExtension(inputPath);
+        var report = new List<string> { $"Detected={regions.Count}" };
+        for (int i = 0; i < regions.Count; i++)
+        {
+            var output = ImageProcessingService.CreateTransparentSquare(bitmap, regions[i].Bounds, 512, 10, 16);
+            string path = Path.Combine(outputDirectory, $"{name}_transparent_{i + 1:00}.png");
+            ImageProcessingService.Save(output, path, "PNG", 92);
+            int stride = output.PixelWidth * 4;
+            var pixels = new byte[stride * output.PixelHeight];
+            output.CopyPixels(pixels, stride, 0);
+            int clear = 0, partial = 0, opaque = 0;
+            for (int p = 3; p < pixels.Length; p += 4)
+            {
+                if (pixels[p] == 0) clear++;
+                else if (pixels[p] == 255) opaque++;
+                else partial++;
+            }
+            report.Add($"{i + 1}: Clear={clear}, Partial={partial}, Opaque={opaque}");
+        }
+        File.WriteAllLines(Path.Combine(outputDirectory, $"{name}_transparent_result.txt"), report);
     }
 }

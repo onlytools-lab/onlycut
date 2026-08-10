@@ -135,7 +135,7 @@
               <ComboBoxItem Content="长图纵向切分"/>
             </ComboBox>
             <TextBlock Text="成品预览" Style="{StaticResource PanelHeader}"/>
-            <materialDesign:Card Height="250" Background="#0C1017" UniformCornerRadius="12" Margin="0,0,0,16" materialDesign:ElevationAssist.Elevation="Dp2">
+            <materialDesign:Card Height="250" Background="{StaticResource TransparencyCheckerBrush}" UniformCornerRadius="12" Margin="0,0,0,16" materialDesign:ElevationAssist.Elevation="Dp2">
               <Image x:Name="OutputPreview" Stretch="Uniform" Margin="12"/>
             </materialDesign:Card>
 
@@ -205,6 +205,18 @@
                 <DockPanel LastChildFill="False"><TextBlock Text="JPG 质量"/><TextBlock x:Name="QualityText" Text="92" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
                 <Slider x:Name="QualitySlider" Minimum="50" Maximum="100" Value="92" TickFrequency="1" ValueChanged="QualitySlider_ValueChanged" Margin="0,0,0,8"/>
                 <CheckBox x:Name="AutoBackgroundBox" Content="自动采样卡片底色" IsChecked="True" Margin="0,4"/>
+                <CheckBox x:Name="TransparentBackgroundBox" Content="移除背景并导出透明 PNG" IsChecked="False"
+                          Margin="0,4" Click="TransparentBackgroundBox_Click"/>
+                <StackPanel x:Name="TransparencyOptionsPanel" Visibility="Collapsed" Margin="0,4,0,8">
+                  <DockPanel LastChildFill="False"><TextBlock Text="去背景容差"/><TextBlock x:Name="TransparencyToleranceText" Text="10" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
+                  <Slider x:Name="TransparencyToleranceSlider" Minimum="2" Maximum="60" Value="10" TickFrequency="1"
+                          ValueChanged="TransparencySlider_ValueChanged" Margin="0,0,0,6"/>
+                  <DockPanel LastChildFill="False"><TextBlock Text="边缘羽化"/><TextBlock x:Name="TransparencyFeatherText" Text="16" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
+                  <Slider x:Name="TransparencyFeatherSlider" Minimum="1" Maximum="40" Value="16" TickFrequency="1"
+                          ValueChanged="TransparencySlider_ValueChanged"/>
+                  <TextBlock Text="仅移除与裁切边缘连通的背景，避免主体内部白色区域被挖空。"
+                             Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,5,0,0"/>
+                </StackPanel>
                 <CheckBox x:Name="CleanCornersBox" Content="自动清理圆角背景" IsChecked="True" IsEnabled="False" Margin="0,4"/>
               </StackPanel>
             </Expander>

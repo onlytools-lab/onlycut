@@ -14,6 +14,14 @@
       <SolidColorBrush x:Key="AppSurfaceHighBrush" Color="#1C222E"/>
       <SolidColorBrush x:Key="MutedBrush" Color="#A9B1C1"/>
       <SolidColorBrush x:Key="DividerBrush" Color="#2A3240"/>
+      <DrawingBrush x:Key="TransparencyCheckerBrush" TileMode="Tile" Viewport="0,0,16,16" ViewportUnits="Absolute">
+        <DrawingBrush.Drawing>
+          <DrawingGroup>
+            <GeometryDrawing Brush="#343A46" Geometry="M0,0 H16 V16 H0 Z"/>
+            <GeometryDrawing Brush="#252B35" Geometry="M0,0 H8 V8 H0 Z M8,8 H16 V16 H8 Z"/>
+          </DrawingGroup>
+        </DrawingBrush.Drawing>
+      </DrawingBrush>
 
       <Style x:Key="TopActionButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignToolButton}">
         <Setter Property="Foreground" Value="White"/>

@@ -370,11 +370,14 @@ public partial class MainWindow : Window
         if (_tasks.Count == 0) { MessageBox.Show(this, "请先添加图片并确认切割框。", "无法导出"); return; }
         var dialog = new OpenFolderDialog { Title = "选择导出文件夹" };
         if (dialog.ShowDialog() != true) return;
-        string format = ((ComboBoxItem)FormatBox.SelectedItem).Content?.ToString() ?? "PNG";
+        bool transparentBackground = TransparentBackgroundBox.IsChecked == true && !IsLongMode;
+        string format = transparentBackground ? "PNG" : ((ComboBoxItem)FormatBox.SelectedItem).Content?.ToString() ?? "PNG";
         string extension = format == "JPG" ? ".jpg" : ".png";
         int outputSize = int.TryParse(((ComboBoxItem)SizeBox.SelectedItem).Tag?.ToString(), out int parsed) ? parsed : 512;
         bool autoBackground = AutoBackgroundBox.IsChecked == true;
         int jpegQuality = (int)QualitySlider.Value;
+        int transparencyTolerance = (int)TransparencyToleranceSlider.Value;
+        int transparencyFeather = (int)TransparencyFeatherSlider.Value;
         int conflictPolicy = ConflictPolicyBox.SelectedIndex;
         DetectionOptions detectionOptions = ReadDetectionOptions();
         int longSplitMode = LongSplitModeBox.SelectedIndex;
@@ -411,7 +414,10 @@ public partial class MainWindow : Window
                     {
                         var output = isLongTask
                             ? ImageProcessingService.CreateCrop(bitmap, regions[i].Bounds)
-                            : ImageProcessingService.CreateSquare(bitmap, regions[i].Bounds, outputSize, autoBackground, Colors.White);
+                            : transparentBackground
+                                ? ImageProcessingService.CreateTransparentSquare(bitmap, regions[i].Bounds, outputSize,
+                                    transparencyTolerance, transparencyFeather)
+                                : ImageProcessingService.CreateSquare(bitmap, regions[i].Bounds, outputSize, autoBackground, Colors.White);
                         string suffix = isLongTask ? $"_part_{i + 1:00}" : $"_{i + 1:00}";
                         string requestedPath = System.IO.Path.Combine(dialog.FolderName, $"{baseName}{suffix}{extension}");
                         string? path = ResolveOutputPath(requestedPath, conflictPolicy);
@@ -513,8 +519,10 @@ public partial class MainWindow : Window
         LongImageExpander.Visibility = IsLongMode ? Visibility.Visible : Visibility.Collapsed;
         SizeBox.IsEnabled = !IsLongMode;
         AutoBackgroundBox.IsEnabled = !IsLongMode;
+        TransparentBackgroundBox.IsEnabled = !IsLongMode;
         CleanCornersBox.IsEnabled = false;
         XBox.IsEnabled = !IsLongMode; YBox.IsEnabled = !IsLongMode; WidthBox.IsEnabled = !IsLongMode;
+        TransparentBackgroundBox_Click(this, null!);
     }
 
     private void LongSplitModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -618,7 +626,10 @@ public partial class MainWindow : Window
         if (_bitmap is null || _selected is null) { OutputPreview.Source = null; return; }
         try { OutputPreview.Source = IsLongMode
             ? ImageProcessingService.CreateCrop(_bitmap, _selected.Bounds)
-            : ImageProcessingService.CreateSquare(_bitmap, _selected.Bounds, 220, AutoBackgroundBox.IsChecked == true, Colors.White); }
+            : TransparentBackgroundBox.IsChecked == true
+                ? ImageProcessingService.CreateTransparentSquare(_bitmap, _selected.Bounds, 220,
+                    (int)TransparencyToleranceSlider.Value, (int)TransparencyFeatherSlider.Value)
+                : ImageProcessingService.CreateSquare(_bitmap, _selected.Bounds, 220, AutoBackgroundBox.IsChecked == true, Colors.White); }
         catch { OutputPreview.Source = null; }
     }
 
@@ -709,6 +720,25 @@ public partial class MainWindow : Window
     {
         if (SensitivityText is not null) SensitivityText.Text = ((int)SensitivitySlider.Value).ToString();
         if (GroupingText is not null) GroupingText.Text = ((int)GroupingSlider.Value).ToString();
+    }
+
+    private void TransparentBackgroundBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (TransparencyOptionsPanel is null) return;
+        bool enabled = !IsLongMode && TransparentBackgroundBox.IsChecked == true;
+        TransparencyOptionsPanel.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        if (enabled) FormatBox.SelectedIndex = 0;
+        FormatBox.IsEnabled = !enabled;
+        AutoBackgroundBox.IsEnabled = !IsLongMode && !enabled;
+        if (_bitmap is not null) UpdateOutputPreview();
+    }
+
+    private void TransparencySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (TransparencyToleranceText is null) return;
+        TransparencyToleranceText.Text = ((int)TransparencyToleranceSlider.Value).ToString();
+        TransparencyFeatherText.Text = ((int)TransparencyFeatherSlider.Value).ToString();
+        if (_bitmap is not null && TransparentBackgroundBox.IsChecked == true) UpdateOutputPreview();
     }
 
     private DetectionOptions ReadDetectionOptions()
@@ -858,6 +888,9 @@ public partial class MainWindow : Window
             SensitivitySlider.Value = settings.DetectionSensitivity;
             GroupingSlider.Value = settings.GroupingDistance;
             MinimumAreaBox.Text = settings.MinimumAreaPercent; ObjectPaddingBox.Text = settings.ObjectPadding;
+            TransparentBackgroundBox.IsChecked = settings.TransparentBackground;
+            TransparencyToleranceSlider.Value = settings.TransparencyTolerance;
+            TransparencyFeatherSlider.Value = settings.TransparencyFeather;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -868,6 +901,7 @@ public partial class MainWindow : Window
             SmartTargetHeightBox.Text = settings.SmartTargetHeight;
             SmartSearchRangeBox.Text = settings.SmartSearchRange;
             UpdateWorkModeUi();
+            TransparentBackgroundBox_Click(this, null!);
             SetZoom(settings.Zoom);
         }
         catch { StatusText.Text = "配置读取失败，已使用默认设置"; }
@@ -887,6 +921,9 @@ public partial class MainWindow : Window
                 , DetectionModeIndex = DetectionModeBox.SelectedIndex,
                 DetectionSensitivity = SensitivitySlider.Value, GroupingDistance = GroupingSlider.Value,
                 MinimumAreaPercent = MinimumAreaBox.Text, ObjectPadding = ObjectPaddingBox.Text,
+                TransparentBackground = TransparentBackgroundBox.IsChecked == true,
+                TransparencyTolerance = TransparencyToleranceSlider.Value,
+                TransparencyFeather = TransparencyFeatherSlider.Value,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,

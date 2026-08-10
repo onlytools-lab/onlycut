@@ -26,4 +26,7 @@ public sealed class AppSettings
     public int ConflictPolicyIndex { get; set; }
     public string SmartTargetHeight { get; set; } = "1200";
     public string SmartSearchRange { get; set; } = "240";
+    public bool TransparentBackground { get; set; }
+    public double TransparencyTolerance { get; set; } = 10;
+    public double TransparencyFeather { get; set; } = 16;
 }
