@@ -69,6 +69,7 @@
               <ComboBoxItem Content="Segoe UI" Tag="Segoe UI"/>
               <ComboBoxItem Content="Arial" Tag="Arial"/>
               <ComboBoxItem Content="Roboto" Tag="Roboto"/>
+              <ComboBoxItem Content="HarmonyOS Sans SC" Tag="HarmonyOS Sans SC"/>
             </ComboBox>
             <TextBlock Text="字体会应用到主窗口和设置窗口；图标与图片内容不受影响。" FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="2,7,0,0"/>
           </StackPanel>

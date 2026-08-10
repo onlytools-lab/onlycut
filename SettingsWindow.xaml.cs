@@ -26,7 +26,8 @@ public partial class SettingsWindow : Window
         AutoSaveIntervalBox.Text = settings.AutoSaveIntervalSeconds.ToString();
         FontFamilyBox.SelectedIndex = settings.FontFamilyName switch
         {
-            "Microsoft YaHei UI" => 1, "Segoe UI" => 2, "Arial" => 3, "Roboto" => 4, _ => 0
+            "Microsoft YaHei UI" => 1, "Segoe UI" => 2, "Arial" => 3, "Roboto" => 4,
+            "HarmonyOS Sans SC" => 5, _ => 0
         };
         UpdateNamingMode();
     }
