@@ -20,6 +20,11 @@ public partial class App : Application
             args.Handled = true;
             Shutdown(-1);
         };
+        if (e.Args.Length >= 1 && e.Args[0] == "--smoke-settings")
+        {
+            var window = new SettingsWindow(new CutPic.Models.AppSettings());
+            window.Show(); window.Close(); Shutdown(); return;
+        }
         if (e.Args.Length >= 3 && (e.Args[0] == "--smoke" || e.Args[0] == "--smoke-objects"))
         {
             RunSmokeTest(e.Args[1], e.Args[2], e.Args[0] == "--smoke-objects");

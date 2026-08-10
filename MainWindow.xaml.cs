@@ -48,6 +48,8 @@ public partial class MainWindow : Window
     private bool _suppressWorkModeChange;
     private bool _suppressRegionBackgroundChange;
     private bool _isPickingBackgroundColor;
+    private bool _autoRestoreSession = true;
+    private int _autoSaveIntervalSeconds = 15;
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
@@ -60,15 +62,53 @@ public partial class MainWindow : Window
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
         LongSplitModeBox_SelectionChanged(this, null!);
+        _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         _recoveryTimer.Tick += (_, _) => SaveRecoveryProject();
         _recoveryTimer.Start();
-        Dispatcher.BeginInvoke(() => RestoreRecoveryProject(), DispatcherPriority.ApplicationIdle);
+        if (_autoRestoreSession)
+            Dispatcher.BeginInvoke(() => RestoreRecoveryProject(), DispatcherPriority.ApplicationIdle);
     }
 
     private void Open_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog { Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp|所有文件|*.*", Multiselect = true };
         if (dialog.ShowDialog() == true) AddFiles(dialog.FileNames);
+    }
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = new AppSettings
+        {
+            ConflictPolicyIndex = ConflictPolicyBox.SelectedIndex,
+            JpegQuality = QualitySlider.Value,
+            NamingModeIndex = NamingModeBox.SelectedIndex,
+            NamingPrefix = NamingPrefixBox.Text,
+            NamingSuffix = NamingSuffixBox.Text,
+            NamingStartNumber = NamingStartNumberBox.Text,
+            NamingDigitsIndex = NamingDigitsBox.SelectedIndex,
+            CreateSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true,
+            OpenFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true,
+            AutoRestoreSession = _autoRestoreSession,
+            AutoSaveIntervalSeconds = _autoSaveIntervalSeconds
+        };
+        var dialog = new SettingsWindow(settings) { Owner = this };
+        if (dialog.ShowDialog() != true) return;
+        settings = dialog.Settings;
+        ConflictPolicyBox.SelectedIndex = settings.ConflictPolicyIndex;
+        QualitySlider.Value = settings.JpegQuality;
+        NamingModeBox.SelectedIndex = settings.NamingModeIndex;
+        NamingPrefixBox.Text = settings.NamingPrefix;
+        NamingSuffixBox.Text = settings.NamingSuffix;
+        NamingStartNumberBox.Text = settings.NamingStartNumber;
+        NamingDigitsBox.SelectedIndex = settings.NamingDigitsIndex;
+        CreateSourceSubfolderBox.IsChecked = settings.CreateSourceSubfolder;
+        OpenFolderAfterExportBox.IsChecked = settings.OpenFolderAfterExport;
+        _autoRestoreSession = settings.AutoRestoreSession;
+        _autoSaveIntervalSeconds = settings.AutoSaveIntervalSeconds;
+        _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
+        UpdateNamingExample();
+        SaveSettings();
+        StatusText.Text = "设置已保存";
     }
 
     private void ImportFolder_Click(object sender, RoutedEventArgs e)
@@ -1138,6 +1178,8 @@ public partial class MainWindow : Window
             NamingDigitsBox.SelectedIndex = Math.Clamp(settings.NamingDigitsIndex, 0, 2);
             CreateSourceSubfolderBox.IsChecked = settings.CreateSourceSubfolder;
             OpenFolderAfterExportBox.IsChecked = settings.OpenFolderAfterExport;
+            _autoRestoreSession = settings.AutoRestoreSession;
+            _autoSaveIntervalSeconds = Math.Clamp(settings.AutoSaveIntervalSeconds, 5, 300);
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1179,6 +1221,8 @@ public partial class MainWindow : Window
                 NamingStartNumber = NamingStartNumberBox.Text, NamingDigitsIndex = NamingDigitsBox.SelectedIndex,
                 CreateSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true,
                 OpenFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true,
+                AutoRestoreSession = _autoRestoreSession,
+                AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,

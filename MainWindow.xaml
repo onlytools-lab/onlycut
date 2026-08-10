@@ -54,6 +54,9 @@
           <Button Style="{StaticResource TopActionButton}" Click="ConfirmTask_Click" ToolTip="标记当前任务已确认">
             <materialDesign:PackIcon Kind="CheckCircleOutline"/>
           </Button>
+          <Button Style="{StaticResource TopActionButton}" Click="Settings_Click" ToolTip="应用设置">
+            <materialDesign:PackIcon Kind="CogOutline"/>
+          </Button>
           <Button Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="12,0,0,0" Padding="18,10"
                   Background="{DynamicResource MaterialDesign.Brush.Secondary}" Foreground="#19111A">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="Export"/><TextBlock Text="导出全部" Margin="8,0,0,0" FontWeight="SemiBold"/></StackPanel>
@@ -196,14 +199,14 @@
                 <ComboBox x:Name="FormatBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件格式" Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,12" SelectionChanged="NamingRule_Changed">
                   <ComboBoxItem Content="PNG"/><ComboBoxItem Content="JPG"/>
                 </ComboBox>
-                <ComboBox x:Name="ConflictPolicyBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件重名处理"
+                <ComboBox x:Name="ConflictPolicyBox" Visibility="Collapsed" SelectedIndex="0" materialDesign:HintAssist.Hint="文件重名处理"
                           Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,12">
                   <ComboBoxItem Content="自动追加序号"/>
                   <ComboBoxItem Content="覆盖已有文件"/>
                   <ComboBoxItem Content="跳过已有文件"/>
                 </ComboBox>
-                <DockPanel LastChildFill="False"><TextBlock Text="JPG 质量"/><TextBlock x:Name="QualityText" Text="92" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
-                <Slider x:Name="QualitySlider" Minimum="50" Maximum="100" Value="92" TickFrequency="1" ValueChanged="QualitySlider_ValueChanged" Margin="0,0,0,8"/>
+                <DockPanel Visibility="Collapsed" LastChildFill="False"><TextBlock Text="JPG 质量"/><TextBlock x:Name="QualityText" Text="92" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
+                <Slider x:Name="QualitySlider" Visibility="Collapsed" Minimum="50" Maximum="100" Value="92" TickFrequency="1" ValueChanged="QualitySlider_ValueChanged" Margin="0,0,0,8"/>
                 <CheckBox x:Name="AutoBackgroundBox" Content="自动采样卡片底色" IsChecked="True" Margin="0,4"/>
                 <CheckBox x:Name="TransparentBackgroundBox" Content="移除背景并导出透明 PNG" IsChecked="False"
                           Margin="0,4" Click="TransparentBackgroundBox_Click"/>
@@ -243,8 +246,9 @@
                              Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,5,0,0"/>
                 </StackPanel>
                 <CheckBox x:Name="CleanCornersBox" Content="自动清理圆角背景" IsChecked="True" IsEnabled="False" Margin="0,4"/>
-                <Separator Margin="0,10,0,8"/>
-                <TextBlock Text="文件命名" Style="{StaticResource PanelHeader}" Margin="0,0,0,8"/>
+                <Separator Visibility="Collapsed" Margin="0,10,0,8"/>
+                <TextBlock Visibility="Collapsed" Text="文件命名" Style="{StaticResource PanelHeader}" Margin="0,0,0,8"/>
+                <StackPanel Visibility="Collapsed">
                 <ComboBox x:Name="NamingModeBox" SelectedIndex="0" materialDesign:HintAssist.Hint="名称来源"
                           Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,10"
                           SelectionChanged="NamingRule_Changed">
@@ -258,11 +262,13 @@
                     <ComboBoxItem Content="2 位" Tag="2"/><ComboBoxItem Content="3 位" Tag="3"/><ComboBoxItem Content="4 位" Tag="4"/>
                   </ComboBox>
                 </UniformGrid>
+                </StackPanel>
                 <Border Background="#12FFFFFF" CornerRadius="6" Padding="9" Margin="0,0,0,8">
                   <TextBlock x:Name="NamingExampleText" Text="示例：商品图_01.png" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                 </Border>
-                <CheckBox x:Name="CreateSourceSubfolderBox" Content="按源图片创建子文件夹" IsChecked="False" Margin="0,3"/>
-                <CheckBox x:Name="OpenFolderAfterExportBox" Content="导出完成后打开文件夹" IsChecked="True" Margin="0,3"/>
+                <CheckBox x:Name="CreateSourceSubfolderBox" Visibility="Collapsed" Content="按源图片创建子文件夹" IsChecked="False" Margin="0,3"/>
+                <CheckBox x:Name="OpenFolderAfterExportBox" Visibility="Collapsed" Content="导出完成后打开文件夹" IsChecked="True" Margin="0,3"/>
+                <Button Content="修改命名与导出默认值" Click="Settings_Click" Style="{StaticResource MaterialDesignFlatButton}" HorizontalAlignment="Left"/>
               </StackPanel>
             </Expander>
 

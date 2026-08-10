@@ -38,4 +38,6 @@ public sealed class AppSettings
     public int NamingDigitsIndex { get; set; }
     public bool CreateSourceSubfolder { get; set; }
     public bool OpenFolderAfterExport { get; set; } = true;
+    public bool AutoRestoreSession { get; set; } = true;
+    public int AutoSaveIntervalSeconds { get; set; } = 15;
 }
