@@ -11,6 +11,7 @@ using CutPic.Services;
 using System.IO;
 using System.Text.Json;
 using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace CutPic;
 
@@ -406,6 +407,7 @@ public partial class MainWindow : Window
         if (_tasks.Count == 0) { MessageBox.Show(this, "请先添加图片并确认切割框。", "无法导出"); return; }
         var dialog = new OpenFolderDialog { Title = "选择导出文件夹" };
         if (dialog.ShowDialog() != true) return;
+        string exportDirectory = dialog.FolderName;
         bool transparentBackground = TransparentBackgroundBox.IsChecked == true && !IsLongMode;
         string format = transparentBackground ? "PNG" : ((ComboBoxItem)FormatBox.SelectedItem).Content?.ToString() ?? "PNG";
         string extension = format == "JPG" ? ".jpg" : ".png";
@@ -424,6 +426,14 @@ public partial class MainWindow : Window
         int[] longCustomHeights = ParseHeightList(LongCustomHeightsBox.Text).ToArray();
         int smartTargetHeight = int.TryParse(SmartTargetHeightBox.Text, out var parsedTarget) ? parsedTarget : 1200;
         int smartSearchRange = int.TryParse(SmartSearchRangeBox.Text, out var parsedRange) ? parsedRange : 240;
+        int namingMode = NamingModeBox.SelectedIndex;
+        string namingPrefix = NamingPrefixBox.Text.Trim();
+        string namingSuffix = NamingSuffixBox.Text.Trim();
+        int namingStart = int.TryParse(NamingStartNumberBox.Text, out int parsedStart) ? Math.Max(0, parsedStart) : 1;
+        int namingDigits = int.TryParse(((ComboBoxItem)NamingDigitsBox.SelectedItem).Tag?.ToString(), out int parsedDigits)
+            ? Math.Clamp(parsedDigits, 1, 8) : 2;
+        bool createSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true;
+        bool openFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true;
         try
         {
             IsEnabled = false;
@@ -448,6 +458,10 @@ public partial class MainWindow : Window
                         throw new InvalidDataException($"{task.Name} 导出检查失败：{string.Join("；", validationErrors)}");
                     }
                     string baseName = System.IO.Path.GetFileNameWithoutExtension(task.Path);
+                    string taskOutputDirectory = createSourceSubfolder
+                        ? System.IO.Path.Combine(exportDirectory, SanitizeFileName(baseName, "图片"))
+                        : exportDirectory;
+                    Directory.CreateDirectory(taskOutputDirectory);
                     for (int i = 0; i < regions.Count; i++)
                     {
                         var output = isLongTask
@@ -457,8 +471,9 @@ public partial class MainWindow : Window
                                     transparencyTolerance, transparencyFeather, transparencyBackgroundSource,
                                     _manualBackgroundColors.TryGetValue(task.Path, out Color sampled) ? sampled : null)
                                 : ImageProcessingService.CreateSquare(bitmap, regions[i].Bounds, outputSize, autoBackground, Colors.White);
-                        string suffix = isLongTask ? $"_part_{i + 1:00}" : $"_{i + 1:00}";
-                        string requestedPath = System.IO.Path.Combine(dialog.FolderName, $"{baseName}{suffix}{extension}");
+                        string fileName = BuildExportFileName(baseName, isLongTask, i, extension, namingMode,
+                            namingPrefix, namingSuffix, namingStart, namingDigits);
+                        string requestedPath = System.IO.Path.Combine(taskOutputDirectory, fileName);
                         string? path = ResolveOutputPath(requestedPath, conflictPolicy);
                         if (path is null) continue;
                         ImageProcessingService.Save(output, path, format, jpegQuality);
@@ -470,6 +485,7 @@ public partial class MainWindow : Window
             TaskList.Items.Refresh();
             StatusText.Text = $"批量导出完成：{_tasks.Count} 个任务，共 {total} 张商品图";
             MessageBox.Show(this, $"已从 {_tasks.Count} 张宫格图中导出 {total} 张正方形商品图。", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (openFolderAfterExport) OpenFolder(exportDirectory);
         }
         catch (Exception ex) { TaskList.Items.Refresh(); MessageBox.Show(this, $"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { IsEnabled = true; }
@@ -513,6 +529,36 @@ public partial class MainWindow : Window
             string candidate = System.IO.Path.Combine(directory, $"{name} ({number}){extension}");
             if (!File.Exists(candidate)) return candidate;
         }
+    }
+
+    private static string BuildExportFileName(string sourceBaseName, bool isLong, int zeroBasedIndex,
+        string extension, int namingMode, string prefix, string suffix, int startNumber, int digits)
+    {
+        string root = namingMode == 1 ? SanitizeFileName(prefix, "切片") : SanitizeFileName(sourceBaseName, "图片");
+        string safeSuffix = string.IsNullOrWhiteSpace(suffix) ? string.Empty : "_" + SanitizeFileName(suffix, string.Empty);
+        string separator = isLong ? "_part_" : "_";
+        string number = (startNumber + zeroBasedIndex).ToString($"D{digits}", CultureInfo.InvariantCulture);
+        string stem = $"{root}{separator}{number}{safeSuffix}";
+        if (stem.Length > 180) stem = stem[..180].TrimEnd(' ', '.');
+        return stem + extension;
+    }
+
+    private static string SanitizeFileName(string value, string fallback)
+    {
+        var invalid = System.IO.Path.GetInvalidFileNameChars().ToHashSet();
+        string result = new(value.Trim().Select(character => invalid.Contains(character) ? '_' : character).ToArray());
+        result = result.Trim(' ', '.');
+        if (string.IsNullOrWhiteSpace(result)) result = fallback;
+        string[] reserved = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"];
+        if (reserved.Contains(result, StringComparer.OrdinalIgnoreCase)) result = "_" + result;
+        return result;
+    }
+
+    private void OpenFolder(string directory)
+    {
+        try { Process.Start(new ProcessStartInfo("explorer.exe", $"\"{directory}\"") { UseShellExecute = true }); }
+        catch (Exception ex) { StatusText.Text = $"导出完成，但无法打开文件夹：{ex.Message}"; }
     }
 
     private void GenerateGrid_Click(object sender, RoutedEventArgs e)
@@ -758,6 +804,25 @@ public partial class MainWindow : Window
     private void QualitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     { if (QualityText is not null) QualityText.Text = ((int)e.NewValue).ToString(); }
 
+    private void NamingRule_Changed(object sender, RoutedEventArgs e) => UpdateNamingExample();
+
+    private void UpdateNamingExample()
+    {
+        if (NamingModeBox is null || NamingPrefixBox is null || NamingSuffixBox is null ||
+            NamingStartNumberBox is null || NamingDigitsBox is null || NamingExampleText is null || FormatBox is null) return;
+        NamingPrefixBox.IsEnabled = NamingModeBox.SelectedIndex == 1;
+        int start = int.TryParse(NamingStartNumberBox.Text, out int parsedStart) ? Math.Max(0, parsedStart) : 1;
+        int digits = NamingDigitsBox.SelectedItem is ComboBoxItem digitsItem &&
+                     int.TryParse(digitsItem.Tag?.ToString(), out int parsedDigits) ? parsedDigits : 2;
+        string format = TransparentBackgroundBox?.IsChecked == true
+            ? "PNG"
+            : (FormatBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "PNG";
+        string extension = format == "JPG" ? ".jpg" : ".png";
+        string example = BuildExportFileName("商品图", false, 0, extension, NamingModeBox.SelectedIndex,
+            NamingPrefixBox.Text, NamingSuffixBox.Text, start, digits);
+        NamingExampleText.Text = $"示例：{example}";
+    }
+
     private void DetectionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (SensitivityText is not null) SensitivityText.Text = ((int)SensitivitySlider.Value).ToString();
@@ -772,6 +837,7 @@ public partial class MainWindow : Window
         if (enabled) FormatBox.SelectedIndex = 0;
         FormatBox.IsEnabled = !enabled;
         AutoBackgroundBox.IsEnabled = !IsLongMode && !enabled;
+        UpdateNamingExample();
         if (_bitmap is not null) UpdateOutputPreview();
     }
 
@@ -1065,6 +1131,13 @@ public partial class MainWindow : Window
             TransparencyStrengthBox.SelectedIndex = Math.Clamp(settings.TransparencyStrengthIndex, 0, 2);
             TransparencyToleranceSlider.Value = settings.TransparencyTolerance;
             TransparencyFeatherSlider.Value = settings.TransparencyFeather;
+            NamingModeBox.SelectedIndex = Math.Clamp(settings.NamingModeIndex, 0, 1);
+            NamingPrefixBox.Text = settings.NamingPrefix;
+            NamingSuffixBox.Text = settings.NamingSuffix;
+            NamingStartNumberBox.Text = settings.NamingStartNumber;
+            NamingDigitsBox.SelectedIndex = Math.Clamp(settings.NamingDigitsIndex, 0, 2);
+            CreateSourceSubfolderBox.IsChecked = settings.CreateSourceSubfolder;
+            OpenFolderAfterExportBox.IsChecked = settings.OpenFolderAfterExport;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1077,6 +1150,7 @@ public partial class MainWindow : Window
             UpdateWorkModeUi();
             TransparentBackgroundBox_Click(this, null!);
             SetZoom(settings.Zoom);
+            UpdateNamingExample();
         }
         catch { StatusText.Text = "配置读取失败，已使用默认设置"; }
     }
@@ -1100,6 +1174,11 @@ public partial class MainWindow : Window
                 TransparencyStrengthIndex = TransparencyStrengthBox.SelectedIndex,
                 TransparencyTolerance = TransparencyToleranceSlider.Value,
                 TransparencyFeather = TransparencyFeatherSlider.Value,
+                NamingModeIndex = NamingModeBox.SelectedIndex,
+                NamingPrefix = NamingPrefixBox.Text, NamingSuffix = NamingSuffixBox.Text,
+                NamingStartNumber = NamingStartNumberBox.Text, NamingDigitsIndex = NamingDigitsBox.SelectedIndex,
+                CreateSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true,
+                OpenFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,

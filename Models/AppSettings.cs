@@ -31,4 +31,11 @@ public sealed class AppSettings
     public int TransparencyStrengthIndex { get; set; } = 1;
     public double TransparencyTolerance { get; set; } = 10;
     public double TransparencyFeather { get; set; } = 16;
+    public int NamingModeIndex { get; set; }
+    public string NamingPrefix { get; set; } = string.Empty;
+    public string NamingSuffix { get; set; } = string.Empty;
+    public string NamingStartNumber { get; set; } = "1";
+    public int NamingDigitsIndex { get; set; }
+    public bool CreateSourceSubfolder { get; set; }
+    public bool OpenFolderAfterExport { get; set; } = true;
 }

@@ -193,7 +193,7 @@
                   <ComboBoxItem Content="保持最大边尺寸" Tag="0"/><ComboBoxItem Content="512 × 512" Tag="512"/>
                   <ComboBoxItem Content="800 × 800" Tag="800"/><ComboBoxItem Content="1024 × 1024" Tag="1024"/>
                 </ComboBox>
-                <ComboBox x:Name="FormatBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件格式" Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,12">
+                <ComboBox x:Name="FormatBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件格式" Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,12" SelectionChanged="NamingRule_Changed">
                   <ComboBoxItem Content="PNG"/><ComboBoxItem Content="JPG"/>
                 </ComboBox>
                 <ComboBox x:Name="ConflictPolicyBox" SelectedIndex="0" materialDesign:HintAssist.Hint="文件重名处理"
@@ -243,6 +243,26 @@
                              Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,5,0,0"/>
                 </StackPanel>
                 <CheckBox x:Name="CleanCornersBox" Content="自动清理圆角背景" IsChecked="True" IsEnabled="False" Margin="0,4"/>
+                <Separator Margin="0,10,0,8"/>
+                <TextBlock Text="文件命名" Style="{StaticResource PanelHeader}" Margin="0,0,0,8"/>
+                <ComboBox x:Name="NamingModeBox" SelectedIndex="0" materialDesign:HintAssist.Hint="名称来源"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,10"
+                          SelectionChanged="NamingRule_Changed">
+                  <ComboBoxItem Content="使用原文件名"/><ComboBoxItem Content="使用自定义前缀"/>
+                </ComboBox>
+                <UniformGrid Columns="2">
+                  <TextBox x:Name="NamingPrefixBox" materialDesign:HintAssist.Hint="自定义前缀" Style="{StaticResource CompactOutlinedTextBox}" TextChanged="NamingRule_Changed"/>
+                  <TextBox x:Name="NamingSuffixBox" materialDesign:HintAssist.Hint="附加后缀" Style="{StaticResource CompactOutlinedTextBox}" Margin="6,5,0,8" TextChanged="NamingRule_Changed"/>
+                  <TextBox x:Name="NamingStartNumberBox" Text="1" materialDesign:HintAssist.Hint="起始编号" Style="{StaticResource CompactOutlinedTextBox}" TextChanged="NamingRule_Changed"/>
+                  <ComboBox x:Name="NamingDigitsBox" SelectedIndex="0" materialDesign:HintAssist.Hint="编号位数" Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="6,5,0,8" SelectionChanged="NamingRule_Changed">
+                    <ComboBoxItem Content="2 位" Tag="2"/><ComboBoxItem Content="3 位" Tag="3"/><ComboBoxItem Content="4 位" Tag="4"/>
+                  </ComboBox>
+                </UniformGrid>
+                <Border Background="#12FFFFFF" CornerRadius="6" Padding="9" Margin="0,0,0,8">
+                  <TextBlock x:Name="NamingExampleText" Text="示例：商品图_01.png" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                </Border>
+                <CheckBox x:Name="CreateSourceSubfolderBox" Content="按源图片创建子文件夹" IsChecked="False" Margin="0,3"/>
+                <CheckBox x:Name="OpenFolderAfterExportBox" Content="导出完成后打开文件夹" IsChecked="True" Margin="0,3"/>
               </StackPanel>
             </Expander>
 
