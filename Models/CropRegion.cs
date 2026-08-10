@@ -8,6 +8,7 @@ public sealed class CropRegion : INotifyPropertyChanged
 {
     private Rect _bounds;
     public int Number { get; set; }
+    public bool RemoveBackground { get; set; } = true;
     public Rect Bounds
     {
         get => _bounds;

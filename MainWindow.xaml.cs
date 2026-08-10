@@ -26,14 +26,16 @@ public partial class MainWindow : Window
     private readonly record struct DetectionOptions(int Mode, double Sensitivity, int Grouping, double MinimumArea, int Padding);
     private sealed class EditHistory
     {
-        public Stack<List<Rect>> Undo { get; } = new();
-        public Stack<List<Rect>> Redo { get; } = new();
+        public Stack<List<RegionSnapshot>> Undo { get; } = new();
+        public Stack<List<RegionSnapshot>> Redo { get; } = new();
     }
+    private readonly record struct RegionSnapshot(Rect Bounds, bool RemoveBackground);
     private List<CropRegion> _regions = [];
     private readonly List<ImageTask> _tasks = [];
     private readonly Dictionary<string, List<CropRegion>> _regionStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, EditHistory> _histories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _longModeStates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Color> _manualBackgroundColors = new(StringComparer.OrdinalIgnoreCase);
     private BitmapSource? _bitmap;
     private string? _sourcePath;
     private CropRegion? _selected;
@@ -43,6 +45,8 @@ public partial class MainWindow : Window
     private DragMode _dragMode;
     private double _zoom = 1;
     private bool _suppressWorkModeChange;
+    private bool _suppressRegionBackgroundChange;
+    private bool _isPickingBackgroundColor;
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
@@ -127,12 +131,15 @@ public partial class MainWindow : Window
         {
             ImagePath = task.Path,
             IsLongMode = _longModeStates.TryGetValue(task.Path, out bool isLong) && isLong,
+            SampledBackgroundColor = _manualBackgroundColors.TryGetValue(task.Path, out Color sampled)
+                ? sampled.ToString() : null,
             Status = task.Status,
             Regions = (_regionStates.TryGetValue(task.Path, out var regions) ? regions : [])
                 .Select(region => new CropBoundsDocument
                 {
                     X = region.Bounds.X, Y = region.Bounds.Y,
-                    Width = region.Bounds.Width, Height = region.Bounds.Height
+                    Width = region.Bounds.Width, Height = region.Bounds.Height,
+                    RemoveBackground = region.RemoveBackground
                 }).ToList()
         }).ToList()
     };
@@ -162,17 +169,24 @@ public partial class MainWindow : Window
         var document = JsonSerializer.Deserialize<ProjectDocument>(File.ReadAllText(path))
             ?? throw new InvalidDataException("项目文件内容为空或格式无效。");
         TaskList.Items.Clear(); _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
+        _manualBackgroundColors.Clear();
         int missing = 0;
         foreach (var savedTask in document.Tasks)
         {
             if (!File.Exists(savedTask.ImagePath)) { missing++; continue; }
             var task = new ImageTask(savedTask.ImagePath, System.IO.Path.GetFileName(savedTask.ImagePath)) { Status = savedTask.Status };
             _tasks.Add(task); TaskList.Items.Add(task); _longModeStates[task.Path] = savedTask.IsLongMode;
+            if (!string.IsNullOrWhiteSpace(savedTask.SampledBackgroundColor))
+            {
+                try { _manualBackgroundColors[task.Path] = (Color)ColorConverter.ConvertFromString(savedTask.SampledBackgroundColor)!; }
+                catch { }
+            }
             if (savedTask.Regions.Count > 0)
                 _regionStates[task.Path] = savedTask.Regions.Select((bounds, index) => new CropRegion
                 {
                     Number = index + 1,
-                    Bounds = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height)
+                    Bounds = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height),
+                    RemoveBackground = bounds.RemoveBackground
                 }).ToList();
         }
         TaskList.Items.Refresh();
@@ -192,6 +206,7 @@ public partial class MainWindow : Window
             EmptyState.Visibility = Visibility.Collapsed;
             SourceImage.Width = Overlay.Width = ImageHost.Width = _bitmap.PixelWidth;
             SourceImage.Height = Overlay.Height = ImageHost.Height = _bitmap.PixelHeight;
+            UpdateSampledBackgroundUi();
             ImageInfoText.Text = $"{System.IO.Path.GetFileName(path)}  ·  {_bitmap.PixelWidth} × {_bitmap.PixelHeight}";
             if (_regionStates.TryGetValue(path, out var saved))
             {
@@ -247,7 +262,7 @@ public partial class MainWindow : Window
                 {
                     new Border { Background = new SolidColorBrush(Color.FromArgb(210, 15, 18, 24)), CornerRadius = new CornerRadius(3),
                         Padding = new Thickness(6,2,6,2), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-                        Child = new TextBlock { Text = region.Number.ToString(), Foreground = Brushes.White, FontWeight = FontWeights.Bold } },
+                        Child = new TextBlock { Text = region.RemoveBackground ? region.Number.ToString() : $"{region.Number} · 保留背景", Foreground = Brushes.White, FontWeight = FontWeights.Bold } },
                     new Ellipse { Width = IsLongMode ? region.Bounds.Width : 14, Height = IsLongMode ? 5 : 14,
                         Fill = Brushes.White, Stroke = Brushes.DodgerBlue, StrokeThickness = IsLongMode ? 1 : 2,
                         HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
@@ -260,6 +275,13 @@ public partial class MainWindow : Window
             Overlay.Children.Add(border);
         }
         UpdateBoundsBoxes();
+        _suppressRegionBackgroundChange = true;
+        if (RemoveBackgroundForRegionBox is not null)
+        {
+            RemoveBackgroundForRegionBox.IsEnabled = _selected is not null;
+            RemoveBackgroundForRegionBox.IsChecked = _selected?.RemoveBackground == true;
+        }
+        _suppressRegionBackgroundChange = false;
         if (updatePreview) UpdateOutputPreview();
     }
 
@@ -314,6 +336,20 @@ public partial class MainWindow : Window
 
     private void Overlay_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     { if (e.OriginalSource == Overlay) { _selected = null; RenderRegions(); } }
+
+    private void Overlay_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isPickingBackgroundColor || _bitmap is null || _sourcePath is null) return;
+        Point point = e.GetPosition(Overlay);
+        Color sampled = ImageProcessingService.SampleColor(_bitmap, (int)Math.Round(point.X), (int)Math.Round(point.Y));
+        _manualBackgroundColors[_sourcePath] = sampled;
+        _isPickingBackgroundColor = false;
+        Overlay.Cursor = Cursors.Arrow;
+        UpdateSampledBackgroundUi();
+        UpdateOutputPreview();
+        StatusText.Text = $"已吸取背景色 {sampled}";
+        e.Handled = true;
+    }
 
     private void AddRegion_Click(object sender, RoutedEventArgs e)
     {
@@ -416,9 +452,10 @@ public partial class MainWindow : Window
                     {
                         var output = isLongTask
                             ? ImageProcessingService.CreateCrop(bitmap, regions[i].Bounds)
-                            : transparentBackground
+                            : transparentBackground && regions[i].RemoveBackground
                                 ? ImageProcessingService.CreateTransparentSquare(bitmap, regions[i].Bounds, outputSize,
-                                    transparencyTolerance, transparencyFeather, transparencyBackgroundSource)
+                                    transparencyTolerance, transparencyFeather, transparencyBackgroundSource,
+                                    _manualBackgroundColors.TryGetValue(task.Path, out Color sampled) ? sampled : null)
                                 : ImageProcessingService.CreateSquare(bitmap, regions[i].Bounds, outputSize, autoBackground, Colors.White);
                         string suffix = isLongTask ? $"_part_{i + 1:00}" : $"_{i + 1:00}";
                         string requestedPath = System.IO.Path.Combine(dialog.FolderName, $"{baseName}{suffix}{extension}");
@@ -628,10 +665,11 @@ public partial class MainWindow : Window
         if (_bitmap is null || _selected is null) { OutputPreview.Source = null; return; }
         try { OutputPreview.Source = IsLongMode
             ? ImageProcessingService.CreateCrop(_bitmap, _selected.Bounds)
-            : TransparentBackgroundBox.IsChecked == true
+            : TransparentBackgroundBox.IsChecked == true && _selected.RemoveBackground
                 ? ImageProcessingService.CreateTransparentSquare(_bitmap, _selected.Bounds, 220,
                     (int)TransparencyToleranceSlider.Value, (int)TransparencyFeatherSlider.Value,
-                    (TransparencyBackgroundSource)Math.Clamp(TransparencyBackgroundSourceBox.SelectedIndex, 0, 2))
+                    (TransparencyBackgroundSource)Math.Clamp(TransparencyBackgroundSourceBox.SelectedIndex, 0, 2),
+                    _sourcePath is not null && _manualBackgroundColors.TryGetValue(_sourcePath, out Color sampled) ? sampled : null)
                 : ImageProcessingService.CreateSquare(_bitmap, _selected.Bounds, 220, AutoBackgroundBox.IsChecked == true, Colors.White); }
         catch { OutputPreview.Source = null; }
     }
@@ -658,7 +696,8 @@ public partial class MainWindow : Window
     {
         if (TaskList.SelectedItem is not ImageTask task) return;
         int index = TaskList.SelectedIndex;
-        _tasks.Remove(task); _regionStates.Remove(task.Path); _histories.Remove(task.Path); _longModeStates.Remove(task.Path); TaskList.Items.Remove(task);
+        _tasks.Remove(task); _regionStates.Remove(task.Path); _histories.Remove(task.Path); _longModeStates.Remove(task.Path);
+        _manualBackgroundColors.Remove(task.Path); TaskList.Items.Remove(task);
         if (_tasks.Count == 0)
         {
             _bitmap = null; _sourcePath = null; _regions = []; _selected = null;
@@ -753,6 +792,120 @@ public partial class MainWindow : Window
             UpdateOutputPreview();
     }
 
+    private void TransparencyStrengthBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TransparencyToleranceSlider is null || TransparencyFeatherSlider is null || TransparencyStrengthBox is null) return;
+        (double tolerance, double feather) = TransparencyStrengthBox.SelectedIndex switch
+        {
+            0 => (5, 10),
+            2 => (20, 24),
+            _ => (10, 16)
+        };
+        TransparencyToleranceSlider.Value = tolerance;
+        TransparencyFeatherSlider.Value = feather;
+    }
+
+    private void PickBackgroundColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_bitmap is null || _sourcePath is null) return;
+        _isPickingBackgroundColor = true;
+        Overlay.Cursor = Cursors.Cross;
+        StatusText.Text = "请在原图的背景区域单击取色，按 Esc 可取消";
+    }
+
+    private void ClearSampledBackground_Click(object sender, RoutedEventArgs e)
+    {
+        if (_sourcePath is null) return;
+        _manualBackgroundColors.Remove(_sourcePath);
+        _isPickingBackgroundColor = false;
+        Overlay.Cursor = Cursors.Arrow;
+        UpdateSampledBackgroundUi();
+        UpdateOutputPreview();
+    }
+
+    private void UpdateSampledBackgroundUi()
+    {
+        if (SampledBackgroundSwatch is null || SampledBackgroundText is null) return;
+        if (_sourcePath is not null && _manualBackgroundColors.TryGetValue(_sourcePath, out Color sampled))
+        {
+            SampledBackgroundSwatch.Background = new SolidColorBrush(sampled);
+            SampledBackgroundText.Text = $"已取样：{sampled}";
+        }
+        else
+        {
+            SampledBackgroundSwatch.Background = Brushes.Transparent;
+            SampledBackgroundText.Text = "当前使用自动采样";
+        }
+    }
+
+    private void RemoveBackgroundForRegionBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (_suppressRegionBackgroundChange || _selected is null) return;
+        PushHistory();
+        _selected.RemoveBackground = RemoveBackgroundForRegionBox.IsChecked == true;
+        RenderRegions();
+    }
+
+    private async void CheckTransparency_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tasks.Count == 0 || TransparentBackgroundBox.IsChecked != true)
+        {
+            MessageBox.Show(this, "请先添加图片并启用透明 PNG 导出。", "透明结果检查");
+            return;
+        }
+        int tolerance = (int)TransparencyToleranceSlider.Value;
+        int feather = (int)TransparencyFeatherSlider.Value;
+        var sourceMode = (TransparencyBackgroundSource)Math.Clamp(TransparencyBackgroundSourceBox.SelectedIndex, 0, 2);
+        DetectionOptions detection = ReadDetectionOptions();
+        var checks = _tasks.Select(task => new
+        {
+            task.Path,
+            task.Name,
+            IsLong = _longModeStates.TryGetValue(task.Path, out bool isLong) && isLong,
+            Regions = _regionStates.TryGetValue(task.Path, out var regions)
+                ? regions.Select(r => new CropRegion { Number = r.Number, Bounds = r.Bounds, RemoveBackground = r.RemoveBackground }).ToList()
+                : null,
+            Sampled = _manualBackgroundColors.TryGetValue(task.Path, out Color sampled) ? sampled : (Color?)null
+        }).ToList();
+        try
+        {
+            IsEnabled = false;
+            var warnings = await Task.Run(() =>
+            {
+                var result = new List<string>();
+                foreach (var task in checks.Where(t => !t.IsLong))
+                {
+                    var bitmap = ImageProcessingService.LoadImage(task.Path);
+                    var regions = task.Regions ?? DetectUsingOptions(bitmap, detection).ToList();
+                    foreach (var region in regions.Where(r => r.RemoveBackground))
+                    {
+                        var preview = ImageProcessingService.CreateTransparentSquare(bitmap, region.Bounds, 220,
+                            tolerance, feather, sourceMode, task.Sampled);
+                        var stats = ImageProcessingService.AnalyzeAlpha(preview);
+                        string? issue = stats.Clear < .04 ? "几乎没有移除背景"
+                            : stats.Clear > .94 ? "透明区域过多"
+                            : stats.Partial > .22 ? "半透明边缘较多"
+                            : null;
+                        if (issue is not null)
+                            result.Add($"{task.Name} / 切片 {region.Number}：{issue}（透明 {stats.Clear:P0}）");
+                    }
+                }
+                return result;
+            });
+            string message = warnings.Count == 0
+                ? "检查完成，没有发现明显异常。"
+                : $"发现 {warnings.Count} 个建议复查的切片：\n\n" + string.Join("\n", warnings.Take(12)) +
+                  (warnings.Count > 12 ? $"\n……另有 {warnings.Count - 12} 项" : string.Empty);
+            MessageBox.Show(this, message, "透明结果检查", MessageBoxButton.OK,
+                warnings.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"检查失败：\n{ex.Message}", "透明结果检查", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally { IsEnabled = true; }
+    }
+
     private DetectionOptions ReadDetectionOptions()
     {
         double minArea = double.TryParse(MinimumAreaBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var area) ? area : .06;
@@ -780,7 +933,12 @@ public partial class MainWindow : Window
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Delete) { DeleteSelected(); e.Handled = true; }
+        if (e.Key == Key.Escape && _isPickingBackgroundColor)
+        {
+            _isPickingBackgroundColor = false; Overlay.Cursor = Cursors.Arrow;
+            StatusText.Text = "已取消背景取色"; e.Handled = true;
+        }
+        else if (e.Key == Key.Delete) { DeleteSelected(); e.Handled = true; }
         else if (e.Key == Key.Z && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { Undo(); e.Handled = true; }
         else if (e.Key == Key.Y && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { Redo(); e.Handled = true; }
     }
@@ -793,7 +951,8 @@ public partial class MainWindow : Window
         return history;
     }
 
-    private List<Rect> Snapshot() => _regions.Select(r => r.Bounds).ToList();
+    private List<RegionSnapshot> Snapshot() => _regions
+        .Select(r => new RegionSnapshot(r.Bounds, r.RemoveBackground)).ToList();
     private void PushHistory()
     {
         var history = CurrentHistory();
@@ -801,9 +960,10 @@ public partial class MainWindow : Window
         history.Undo.Push(Snapshot()); history.Redo.Clear();
     }
 
-    private void ApplySnapshot(List<Rect> snapshot)
+    private void ApplySnapshot(List<RegionSnapshot> snapshot)
     {
-        _regions = snapshot.Select((r, i) => new CropRegion { Number = i + 1, Bounds = r }).ToList();
+        _regions = snapshot.Select((r, i) => new CropRegion
+            { Number = i + 1, Bounds = r.Bounds, RemoveBackground = r.RemoveBackground }).ToList();
         if (_sourcePath is not null) _regionStates[_sourcePath] = _regions;
         _selected = _regions.FirstOrDefault(); RenderRegions();
     }
@@ -902,6 +1062,7 @@ public partial class MainWindow : Window
             MinimumAreaBox.Text = settings.MinimumAreaPercent; ObjectPaddingBox.Text = settings.ObjectPadding;
             TransparentBackgroundBox.IsChecked = settings.TransparentBackground;
             TransparencyBackgroundSourceBox.SelectedIndex = Math.Clamp(settings.TransparencyBackgroundSourceIndex, 0, 2);
+            TransparencyStrengthBox.SelectedIndex = Math.Clamp(settings.TransparencyStrengthIndex, 0, 2);
             TransparencyToleranceSlider.Value = settings.TransparencyTolerance;
             TransparencyFeatherSlider.Value = settings.TransparencyFeather;
             _suppressWorkModeChange = true;
@@ -936,6 +1097,7 @@ public partial class MainWindow : Window
                 MinimumAreaPercent = MinimumAreaBox.Text, ObjectPadding = ObjectPaddingBox.Text,
                 TransparentBackground = TransparentBackgroundBox.IsChecked == true,
                 TransparencyBackgroundSourceIndex = TransparencyBackgroundSourceBox.SelectedIndex,
+                TransparencyStrengthIndex = TransparencyStrengthBox.SelectedIndex,
                 TransparencyTolerance = TransparencyToleranceSlider.Value,
                 TransparencyFeather = TransparencyFeatherSlider.Value,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,

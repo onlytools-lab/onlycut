@@ -240,7 +240,8 @@ public static class ImageProcessingService
 
     public static BitmapSource CreateTransparentSquare(BitmapSource source, Rect requestedBounds,
         int outputSize, int tolerance, int feather,
-        TransparencyBackgroundSource backgroundSource = TransparencyBackgroundSource.Automatic)
+        TransparencyBackgroundSource backgroundSource = TransparencyBackgroundSource.Automatic,
+        Color? sampledBackground = null)
     {
         var bounds = ClampToImage(requestedBounds, source.PixelWidth, source.PixelHeight);
         int x = (int)Math.Round(bounds.X), y = (int)Math.Round(bounds.Y);
@@ -255,7 +256,7 @@ public static class ImageProcessingService
         bool useCardBackground = backgroundSource == TransparencyBackgroundSource.Card ||
             backgroundSource == TransparencyBackgroundSource.Automatic &&
             ColorDistance(outerBackground, cardBackground) >= 30;
-        Color background = useCardBackground ? cardBackground : outerBackground;
+        Color background = sampledBackground ?? (useCardBackground ? cardBackground : outerBackground);
 
         var crop = new byte[width * height * 4];
         for (int row = 0; row < height; row++)
@@ -552,4 +553,39 @@ public static class ImageProcessingService
 
     private static int ColorDistance(Color first, Color second) => Math.Max(Math.Abs(first.R - second.R),
         Math.Max(Math.Abs(first.G - second.G), Math.Abs(first.B - second.B)));
+
+    public static Color SampleColor(BitmapSource source, int x, int y, int radius = 2)
+    {
+        x = Math.Clamp(x, 0, source.PixelWidth - 1);
+        y = Math.Clamp(y, 0, source.PixelHeight - 1);
+        radius = Math.Clamp(radius, 0, 12);
+        int left = Math.Max(0, x - radius), top = Math.Max(0, y - radius);
+        int width = Math.Min(source.PixelWidth - left, radius * 2 + 1);
+        int height = Math.Min(source.PixelHeight - top, radius * 2 + 1);
+        int stride = width * 4;
+        var pixels = new byte[stride * height];
+        source.CopyPixels(new Int32Rect(left, top, width, height), pixels, stride, 0);
+        return Color.FromRgb(Median(Enumerable.Range(0, width * height).Select(i => pixels[i * 4 + 2])),
+            Median(Enumerable.Range(0, width * height).Select(i => pixels[i * 4 + 1])),
+            Median(Enumerable.Range(0, width * height).Select(i => pixels[i * 4])));
+    }
+
+    public static (double Clear, double Partial, double Opaque) AnalyzeAlpha(BitmapSource source)
+    {
+        var converted = source.Format == PixelFormats.Bgra32
+            ? source
+            : new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+        int stride = converted.PixelWidth * 4;
+        var pixels = new byte[stride * converted.PixelHeight];
+        converted.CopyPixels(pixels, stride, 0);
+        int clear = 0, partial = 0, opaque = 0;
+        for (int p = 3; p < pixels.Length; p += 4)
+        {
+            if (pixels[p] <= 5) clear++;
+            else if (pixels[p] >= 250) opaque++;
+            else partial++;
+        }
+        double total = Math.Max(1, clear + partial + opaque);
+        return (clear / total, partial / total, opaque / total);
+    }
 }

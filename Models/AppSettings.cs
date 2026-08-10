@@ -28,6 +28,7 @@ public sealed class AppSettings
     public string SmartSearchRange { get; set; } = "240";
     public bool TransparentBackground { get; set; }
     public int TransparencyBackgroundSourceIndex { get; set; }
+    public int TransparencyStrengthIndex { get; set; } = 1;
     public double TransparencyTolerance { get; set; } = 10;
     public double TransparencyFeather { get; set; } = 16;
 }

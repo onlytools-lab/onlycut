@@ -101,7 +101,7 @@
               <Grid x:Name="ImageHost" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="28" RenderTransformOrigin="0,0">
                 <Grid.LayoutTransform><ScaleTransform x:Name="CanvasScale" ScaleX="1" ScaleY="1"/></Grid.LayoutTransform>
                 <Image x:Name="SourceImage" Stretch="None"/>
-                <Canvas x:Name="Overlay" Background="Transparent" MouseLeftButtonDown="Overlay_MouseLeftButtonDown"
+                <Canvas x:Name="Overlay" Background="Transparent" PreviewMouseLeftButtonDown="Overlay_PreviewMouseLeftButtonDown" MouseLeftButtonDown="Overlay_MouseLeftButtonDown"
                         MouseMove="Overlay_MouseMove" MouseLeftButtonUp="Overlay_MouseLeftButtonUp"/>
               </Grid>
             </ScrollViewer>
@@ -216,6 +216,23 @@
                     <ComboBoxItem Content="无边界背景" ToolTip="从整张图片外沿采样背景，适合白底散列素材"/>
                     <ComboBoxItem Content="卡片背景" ToolTip="从卡片内部采样底色，并清理圆角卡片外框"/>
                   </ComboBox>
+                  <ComboBox x:Name="TransparencyStrengthBox" SelectedIndex="1"
+                            materialDesign:HintAssist.Hint="去背景强度"
+                            Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                            SelectionChanged="TransparencyStrengthBox_SelectionChanged" Margin="0,0,0,10">
+                    <ComboBoxItem Content="保守"/><ComboBoxItem Content="标准"/><ComboBoxItem Content="强力"/>
+                  </ComboBox>
+                  <UniformGrid Columns="2" Margin="0,0,0,8">
+                    <Button Content="吸取背景色" Click="PickBackgroundColor_Click" Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                    <Button Content="恢复自动采样" Click="ClearSampledBackground_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="6,0,0,0"/>
+                  </UniformGrid>
+                  <DockPanel Margin="2,0,2,8">
+                    <Border x:Name="SampledBackgroundSwatch" Width="20" Height="20" CornerRadius="4" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" Background="Transparent"/>
+                    <TextBlock x:Name="SampledBackgroundText" Text="当前使用自动采样" Margin="8,2,0,0" Foreground="{StaticResource MutedBrush}"/>
+                  </DockPanel>
+                  <CheckBox x:Name="RemoveBackgroundForRegionBox" Content="当前切片移除背景" IsChecked="True" Margin="0,0,0,8"
+                            Click="RemoveBackgroundForRegionBox_Click"/>
+                  <Button Content="检查透明结果" Click="CheckTransparency_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,10"/>
                   <DockPanel LastChildFill="False"><TextBlock Text="去背景容差"/><TextBlock x:Name="TransparencyToleranceText" Text="10" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
                   <Slider x:Name="TransparencyToleranceSlider" Minimum="2" Maximum="60" Value="10" TickFrequency="1"
                           ValueChanged="TransparencySlider_ValueChanged" Margin="0,0,0,6"/>
