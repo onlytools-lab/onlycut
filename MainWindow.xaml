@@ -208,6 +208,14 @@
                 <CheckBox x:Name="TransparentBackgroundBox" Content="移除背景并导出透明 PNG" IsChecked="False"
                           Margin="0,4" Click="TransparentBackgroundBox_Click"/>
                 <StackPanel x:Name="TransparencyOptionsPanel" Visibility="Collapsed" Margin="0,4,0,8">
+                  <ComboBox x:Name="TransparencyBackgroundSourceBox" SelectedIndex="0"
+                            materialDesign:HintAssist.Hint="去背景来源"
+                            Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                            SelectionChanged="TransparencyBackgroundSourceBox_SelectionChanged" Margin="0,2,0,10">
+                    <ComboBoxItem Content="自动判断" ToolTip="根据整图外沿与切片内部背景的差异自动选择"/>
+                    <ComboBoxItem Content="无边界背景" ToolTip="从整张图片外沿采样背景，适合白底散列素材"/>
+                    <ComboBoxItem Content="卡片背景" ToolTip="从卡片内部采样底色，并清理圆角卡片外框"/>
+                  </ComboBox>
                   <DockPanel LastChildFill="False"><TextBlock Text="去背景容差"/><TextBlock x:Name="TransparencyToleranceText" Text="10" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
                   <Slider x:Name="TransparencyToleranceSlider" Minimum="2" Maximum="60" Value="10" TickFrequency="1"
                           ValueChanged="TransparencySlider_ValueChanged" Margin="0,0,0,6"/>

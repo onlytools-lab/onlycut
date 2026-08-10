@@ -378,6 +378,8 @@ public partial class MainWindow : Window
         int jpegQuality = (int)QualitySlider.Value;
         int transparencyTolerance = (int)TransparencyToleranceSlider.Value;
         int transparencyFeather = (int)TransparencyFeatherSlider.Value;
+        var transparencyBackgroundSource = (TransparencyBackgroundSource)Math.Clamp(
+            TransparencyBackgroundSourceBox.SelectedIndex, 0, 2);
         int conflictPolicy = ConflictPolicyBox.SelectedIndex;
         DetectionOptions detectionOptions = ReadDetectionOptions();
         int longSplitMode = LongSplitModeBox.SelectedIndex;
@@ -416,7 +418,7 @@ public partial class MainWindow : Window
                             ? ImageProcessingService.CreateCrop(bitmap, regions[i].Bounds)
                             : transparentBackground
                                 ? ImageProcessingService.CreateTransparentSquare(bitmap, regions[i].Bounds, outputSize,
-                                    transparencyTolerance, transparencyFeather)
+                                    transparencyTolerance, transparencyFeather, transparencyBackgroundSource)
                                 : ImageProcessingService.CreateSquare(bitmap, regions[i].Bounds, outputSize, autoBackground, Colors.White);
                         string suffix = isLongTask ? $"_part_{i + 1:00}" : $"_{i + 1:00}";
                         string requestedPath = System.IO.Path.Combine(dialog.FolderName, $"{baseName}{suffix}{extension}");
@@ -628,7 +630,8 @@ public partial class MainWindow : Window
             ? ImageProcessingService.CreateCrop(_bitmap, _selected.Bounds)
             : TransparentBackgroundBox.IsChecked == true
                 ? ImageProcessingService.CreateTransparentSquare(_bitmap, _selected.Bounds, 220,
-                    (int)TransparencyToleranceSlider.Value, (int)TransparencyFeatherSlider.Value)
+                    (int)TransparencyToleranceSlider.Value, (int)TransparencyFeatherSlider.Value,
+                    (TransparencyBackgroundSource)Math.Clamp(TransparencyBackgroundSourceBox.SelectedIndex, 0, 2))
                 : ImageProcessingService.CreateSquare(_bitmap, _selected.Bounds, 220, AutoBackgroundBox.IsChecked == true, Colors.White); }
         catch { OutputPreview.Source = null; }
     }
@@ -742,6 +745,12 @@ public partial class MainWindow : Window
         TransparencyToleranceText.Text = ((int)TransparencyToleranceSlider.Value).ToString();
         TransparencyFeatherText.Text = ((int)TransparencyFeatherSlider.Value).ToString();
         if (_bitmap is not null && TransparentBackgroundBox.IsChecked == true) UpdateOutputPreview();
+    }
+
+    private void TransparencyBackgroundSourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_bitmap is not null && TransparentBackgroundBox?.IsChecked == true)
+            UpdateOutputPreview();
     }
 
     private DetectionOptions ReadDetectionOptions()
@@ -892,6 +901,7 @@ public partial class MainWindow : Window
             GroupingSlider.Value = settings.GroupingDistance;
             MinimumAreaBox.Text = settings.MinimumAreaPercent; ObjectPaddingBox.Text = settings.ObjectPadding;
             TransparentBackgroundBox.IsChecked = settings.TransparentBackground;
+            TransparencyBackgroundSourceBox.SelectedIndex = Math.Clamp(settings.TransparencyBackgroundSourceIndex, 0, 2);
             TransparencyToleranceSlider.Value = settings.TransparencyTolerance;
             TransparencyFeatherSlider.Value = settings.TransparencyFeather;
             _suppressWorkModeChange = true;
@@ -925,6 +935,7 @@ public partial class MainWindow : Window
                 DetectionSensitivity = SensitivitySlider.Value, GroupingDistance = GroupingSlider.Value,
                 MinimumAreaPercent = MinimumAreaBox.Text, ObjectPadding = ObjectPaddingBox.Text,
                 TransparentBackground = TransparentBackgroundBox.IsChecked == true,
+                TransparencyBackgroundSourceIndex = TransparencyBackgroundSourceBox.SelectedIndex,
                 TransparencyTolerance = TransparencyToleranceSlider.Value,
                 TransparencyFeather = TransparencyFeatherSlider.Value,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,

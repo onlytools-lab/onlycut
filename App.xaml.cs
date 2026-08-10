@@ -3,6 +3,7 @@ using System.Windows.Media;
 using CutPic.Services;
 using System.IO;
 using System.Text;
+using CutPic.Models;
 
 namespace CutPic;
 
@@ -31,9 +32,12 @@ public partial class App : Application
             Shutdown();
             return;
         }
-        if (e.Args.Length >= 3 && e.Args[0] == "--smoke-transparent")
+        if (e.Args.Length >= 3 && (e.Args[0] == "--smoke-transparent" || e.Args[0] == "--smoke-transparent-card"))
         {
-            RunTransparentSmokeTest(e.Args[1], e.Args[2]);
+            RunTransparentSmokeTest(e.Args[1], e.Args[2],
+                e.Args[0] == "--smoke-transparent-card"
+                    ? TransparencyBackgroundSource.Card
+                    : TransparencyBackgroundSource.Borderless);
             Shutdown();
             return;
         }
@@ -113,16 +117,20 @@ public partial class App : Application
             string.Join(Environment.NewLine, regions.Select(r => $"{r.Number}: {r.Bounds}")));
     }
 
-    private static void RunTransparentSmokeTest(string inputPath, string outputDirectory)
+    private static void RunTransparentSmokeTest(string inputPath, string outputDirectory,
+        TransparencyBackgroundSource backgroundSource)
     {
         Directory.CreateDirectory(outputDirectory);
         var bitmap = ImageProcessingService.LoadImage(inputPath);
-        var regions = ImageProcessingService.DetectObjects(bitmap, 60, 40, .06, 18);
+        var regions = backgroundSource == TransparencyBackgroundSource.Card
+            ? ImageProcessingService.DetectCards(bitmap)
+            : ImageProcessingService.DetectObjects(bitmap, 60, 40, .06, 18);
         string name = Path.GetFileNameWithoutExtension(inputPath);
         var report = new List<string> { $"Detected={regions.Count}" };
         for (int i = 0; i < regions.Count; i++)
         {
-            var output = ImageProcessingService.CreateTransparentSquare(bitmap, regions[i].Bounds, 512, 10, 16);
+            var output = ImageProcessingService.CreateTransparentSquare(bitmap, regions[i].Bounds, 512, 10, 16,
+                backgroundSource);
             string path = Path.Combine(outputDirectory, $"{name}_transparent_{i + 1:00}.png");
             ImageProcessingService.Save(output, path, "PNG", 92);
             int stride = output.PixelWidth * 4;

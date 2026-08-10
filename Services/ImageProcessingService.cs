@@ -239,7 +239,8 @@ public static class ImageProcessingService
     }
 
     public static BitmapSource CreateTransparentSquare(BitmapSource source, Rect requestedBounds,
-        int outputSize, int tolerance, int feather)
+        int outputSize, int tolerance, int feather,
+        TransparencyBackgroundSource backgroundSource = TransparencyBackgroundSource.Automatic)
     {
         var bounds = ClampToImage(requestedBounds, source.PixelWidth, source.PixelHeight);
         int x = (int)Math.Round(bounds.X), y = (int)Math.Round(bounds.Y);
@@ -248,15 +249,26 @@ public static class ImageProcessingService
         int sourceStride = source.PixelWidth * 4;
         var all = new byte[sourceStride * source.PixelHeight];
         source.CopyPixels(all, sourceStride, 0);
-        Color background = EstimateOuterBackground(all, source.PixelWidth, source.PixelHeight, sourceStride);
+        Color outerBackground = EstimateOuterBackground(all, source.PixelWidth, source.PixelHeight, sourceStride);
+        Color cardBackground = EstimateCardBackground(all, source.PixelWidth, source.PixelHeight, sourceStride,
+            x, y, width, height);
+        bool useCardBackground = backgroundSource == TransparencyBackgroundSource.Card ||
+            backgroundSource == TransparencyBackgroundSource.Automatic &&
+            ColorDistance(outerBackground, cardBackground) >= 30;
+        Color background = useCardBackground ? cardBackground : outerBackground;
 
         var crop = new byte[width * height * 4];
         for (int row = 0; row < height; row++)
             Buffer.BlockCopy(all, (y + row) * sourceStride + x * 4, crop, row * width * 4, width * 4);
+        if (useCardBackground)
+            RemoveOuterCornerBackground(crop, width, height, background);
 
         tolerance = Math.Clamp(tolerance, 1, 100);
         feather = Math.Clamp(feather, 1, 100);
-        int threshold = tolerance + feather;
+        // Card interiors are usually almost uniform. A conservative seed tolerance keeps
+        // near-white products from becoming connected to that background through soft edges.
+        int seedTolerance = useCardBackground ? Math.Min(tolerance, 4) : tolerance;
+        int threshold = seedTolerance + feather;
         var connected = new bool[width * height];
         var queue = new int[connected.Length];
         int head = 0, tail = 0;
@@ -266,7 +278,7 @@ public static class ImageProcessingService
             int p = index * 4;
             int delta = Math.Max(Math.Abs(crop[p + 2] - background.R),
                 Math.Max(Math.Abs(crop[p + 1] - background.G), Math.Abs(crop[p] - background.B)));
-            return delta <= tolerance;
+            return delta <= seedTolerance;
         }
         void Seed(int index)
         {
@@ -319,7 +331,7 @@ public static class ImageProcessingService
             if (edgeLevel[index] == 0) continue;
             int delta = Math.Max(Math.Abs(crop[p + 2] - background.R),
                 Math.Max(Math.Abs(crop[p + 1] - background.G), Math.Abs(crop[p] - background.B)));
-            double colorFactor = Math.Clamp((delta - tolerance) / (double)feather, 0, 1);
+            double colorFactor = Math.Clamp((delta - seedTolerance) / (double)feather, 0, 1);
             double spatialFactor = edgeLevel[index] / (double)(featherRadius + 1);
             double alphaFactor = Math.Max(colorFactor, spatialFactor);
             byte originalAlpha = crop[p + 3];
@@ -537,4 +549,7 @@ public static class ImageProcessingService
     }
 
     private static double Luminance(byte r, byte g, byte b) => .2126 * r + .7152 * g + .0722 * b;
+
+    private static int ColorDistance(Color first, Color second) => Math.Max(Math.Abs(first.R - second.R),
+        Math.Max(Math.Abs(first.G - second.G), Math.Abs(first.B - second.B)));
 }
