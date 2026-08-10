@@ -58,6 +58,21 @@
             <TextBlock Text="允许范围 5–300 秒。项目恢复文件保存在当前用户的本地应用数据目录。" FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="2,7,0,0"/>
           </StackPanel>
         </materialDesign:Card>
+
+        <TextBlock Text="外观" Style="{StaticResource PanelHeader}" Margin="4,18,0,10"/>
+        <materialDesign:Card Padding="18" Background="{StaticResource AppSurfaceBrush}" UniformCornerRadius="10">
+          <StackPanel>
+            <ComboBox x:Name="FontFamilyBox" materialDesign:HintAssist.Hint="界面字体"
+                      Style="{StaticResource MaterialDesignOutlinedComboBox}" SelectionChanged="FontFamilyBox_SelectionChanged">
+              <ComboBoxItem Content="跟随 Windows 系统" Tag="System"/>
+              <ComboBoxItem Content="Microsoft YaHei UI（微软雅黑）" Tag="Microsoft YaHei UI"/>
+              <ComboBoxItem Content="Segoe UI" Tag="Segoe UI"/>
+              <ComboBoxItem Content="Arial" Tag="Arial"/>
+              <ComboBoxItem Content="Roboto" Tag="Roboto"/>
+            </ComboBox>
+            <TextBlock Text="字体会应用到主窗口和设置窗口；图标与图片内容不受影响。" FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="2,7,0,0"/>
+          </StackPanel>
+        </materialDesign:Card>
       </StackPanel>
     </ScrollViewer>
 

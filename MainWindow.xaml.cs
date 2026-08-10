@@ -50,6 +50,7 @@ public partial class MainWindow : Window
     private bool _isPickingBackgroundColor;
     private bool _autoRestoreSession = true;
     private int _autoSaveIntervalSeconds = 15;
+    private string _fontFamilyName = "System";
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
@@ -61,6 +62,7 @@ public partial class MainWindow : Window
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
+        ApplyFontFamily();
         LongSplitModeBox_SelectionChanged(this, null!);
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         _recoveryTimer.Tick += (_, _) => SaveRecoveryProject();
@@ -89,7 +91,8 @@ public partial class MainWindow : Window
             CreateSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true,
             OpenFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true,
             AutoRestoreSession = _autoRestoreSession,
-            AutoSaveIntervalSeconds = _autoSaveIntervalSeconds
+            AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
+            FontFamilyName = _fontFamilyName
         };
         var dialog = new SettingsWindow(settings) { Owner = this };
         if (dialog.ShowDialog() != true) return;
@@ -105,7 +108,9 @@ public partial class MainWindow : Window
         OpenFolderAfterExportBox.IsChecked = settings.OpenFolderAfterExport;
         _autoRestoreSession = settings.AutoRestoreSession;
         _autoSaveIntervalSeconds = settings.AutoSaveIntervalSeconds;
+        _fontFamilyName = settings.FontFamilyName;
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
+        ApplyFontFamily();
         UpdateNamingExample();
         SaveSettings();
         StatusText.Text = "设置已保存";
@@ -1180,6 +1185,7 @@ public partial class MainWindow : Window
             OpenFolderAfterExportBox.IsChecked = settings.OpenFolderAfterExport;
             _autoRestoreSession = settings.AutoRestoreSession;
             _autoSaveIntervalSeconds = Math.Clamp(settings.AutoSaveIntervalSeconds, 5, 300);
+            _fontFamilyName = settings.FontFamilyName;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1193,6 +1199,7 @@ public partial class MainWindow : Window
             TransparentBackgroundBox_Click(this, null!);
             SetZoom(settings.Zoom);
             UpdateNamingExample();
+            ApplyFontFamily();
         }
         catch { StatusText.Text = "配置读取失败，已使用默认设置"; }
     }
@@ -1223,6 +1230,7 @@ public partial class MainWindow : Window
                 OpenFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true,
                 AutoRestoreSession = _autoRestoreSession,
                 AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
+                FontFamilyName = _fontFamilyName,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,
@@ -1231,5 +1239,22 @@ public partial class MainWindow : Window
             File.WriteAllText(SettingsPath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch { }
+    }
+
+    private void ApplyFontFamily()
+    {
+        try
+        {
+            FontFamily = string.IsNullOrWhiteSpace(_fontFamilyName) || _fontFamilyName == "System"
+                ? SystemFonts.MessageFontFamily
+                : new FontFamily(_fontFamilyName == "Roboto"
+                    ? "pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto"
+                    : _fontFamilyName);
+        }
+        catch
+        {
+            _fontFamilyName = "System";
+            FontFamily = SystemFonts.MessageFontFamily;
+        }
     }
 }

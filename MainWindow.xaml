@@ -5,7 +5,6 @@
         Title="CutPic · 智能切图" Width="1500" Height="920" MinWidth="1120" MinHeight="700"
         Background="{StaticResource AppCanvasBrush}"
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
-        FontFamily="pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto"
         AllowDrop="True" Drop="Window_Drop" DragOver="Window_DragOver">
   <Grid>
     <Grid.RowDefinitions>

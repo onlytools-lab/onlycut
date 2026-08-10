@@ -1,5 +1,7 @@
 using System.Windows;
 using CutPic.Models;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace CutPic;
 
@@ -22,6 +24,10 @@ public partial class SettingsWindow : Window
         NamingDigitsBox.SelectedIndex = Math.Clamp(settings.NamingDigitsIndex, 0, 2);
         AutoRestoreBox.IsChecked = settings.AutoRestoreSession;
         AutoSaveIntervalBox.Text = settings.AutoSaveIntervalSeconds.ToString();
+        FontFamilyBox.SelectedIndex = settings.FontFamilyName switch
+        {
+            "Microsoft YaHei UI" => 1, "Segoe UI" => 2, "Arial" => 3, "Roboto" => 4, _ => 0
+        };
         UpdateNamingMode();
     }
 
@@ -53,6 +59,7 @@ public partial class SettingsWindow : Window
         Settings.NamingDigitsIndex = NamingDigitsBox.SelectedIndex;
         Settings.AutoRestoreSession = AutoRestoreBox.IsChecked == true;
         Settings.AutoSaveIntervalSeconds = interval;
+        Settings.FontFamilyName = (FontFamilyBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "System";
         DialogResult = true;
     }
 
@@ -80,5 +87,14 @@ public partial class SettingsWindow : Window
         NamingDigitsBox.SelectedIndex = 0;
         AutoRestoreBox.IsChecked = true;
         AutoSaveIntervalBox.Text = "15";
+        FontFamilyBox.SelectedIndex = 0;
+    }
+
+    private void FontFamilyBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (FontFamilyBox?.SelectedItem is not ComboBoxItem item) return;
+        string name = item.Tag?.ToString() ?? "System";
+        FontFamily = name == "System" ? SystemFonts.MessageFontFamily : new FontFamily(name == "Roboto"
+            ? "pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto" : name);
     }
 }

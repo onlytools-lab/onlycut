@@ -40,4 +40,5 @@ public sealed class AppSettings
     public bool OpenFolderAfterExport { get; set; } = true;
     public bool AutoRestoreSession { get; set; } = true;
     public int AutoSaveIntervalSeconds { get; set; } = 15;
+    public string FontFamilyName { get; set; } = "System";
 }
