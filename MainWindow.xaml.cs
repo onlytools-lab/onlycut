@@ -735,7 +735,10 @@ public partial class MainWindow : Window
 
     private void TransparencySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (TransparencyToleranceText is null) return;
+        // ValueChanged can fire while InitializeComponent is still constructing the
+        // second slider. Do not read sibling controls until the whole group exists.
+        if (TransparencyToleranceText is null || TransparencyFeatherText is null ||
+            TransparencyToleranceSlider is null || TransparencyFeatherSlider is null) return;
         TransparencyToleranceText.Text = ((int)TransparencyToleranceSlider.Value).ToString();
         TransparencyFeatherText.Text = ((int)TransparencyFeatherSlider.Value).ToString();
         if (_bitmap is not null && TransparentBackgroundBox.IsChecked == true) UpdateOutputPreview();
