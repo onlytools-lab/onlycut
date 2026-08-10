@@ -41,4 +41,5 @@ public sealed class AppSettings
     public bool AutoRestoreSession { get; set; } = true;
     public int AutoSaveIntervalSeconds { get; set; } = 15;
     public string FontFamilyName { get; set; } = "System";
+    public string LanguageCode { get; set; } = "zh-CN";
 }

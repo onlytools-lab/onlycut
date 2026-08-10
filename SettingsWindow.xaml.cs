@@ -1,5 +1,6 @@
 using System.Windows;
 using CutPic.Models;
+using CutPic.Services;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -29,7 +30,9 @@ public partial class SettingsWindow : Window
             "Microsoft YaHei UI" => 1, "Segoe UI" => 2, "Arial" => 3, "Roboto" => 4,
             "HarmonyOS Sans SC" => 5, _ => 0
         };
+        LanguageBox.SelectedIndex = settings.LanguageCode == "en-US" ? 1 : 0;
         UpdateNamingMode();
+        LocalizationService.Apply(this);
     }
 
     private void QualitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -41,12 +44,12 @@ public partial class SettingsWindow : Window
     {
         if (!int.TryParse(NamingStartNumberBox.Text, out int start) || start < 0)
         {
-            MessageBox.Show(this, "起始编号必须是大于或等于 0 的整数。", "设置无效");
+            ShowMessage( "起始编号必须是大于或等于 0 的整数。", "设置无效");
             NamingStartNumberBox.Focus(); return;
         }
         if (!int.TryParse(AutoSaveIntervalBox.Text, out int interval) || interval is < 5 or > 300)
         {
-            MessageBox.Show(this, "自动保存间隔必须在 5–300 秒之间。", "设置无效");
+            ShowMessage( "自动保存间隔必须在 5–300 秒之间。", "设置无效");
             AutoSaveIntervalBox.Focus(); return;
         }
         Settings.ConflictPolicyIndex = ConflictPolicyBox.SelectedIndex;
@@ -61,6 +64,7 @@ public partial class SettingsWindow : Window
         Settings.AutoRestoreSession = AutoRestoreBox.IsChecked == true;
         Settings.AutoSaveIntervalSeconds = interval;
         Settings.FontFamilyName = (FontFamilyBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "System";
+        Settings.LanguageCode = (LanguageBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "zh-CN";
         DialogResult = true;
     }
 
@@ -89,6 +93,7 @@ public partial class SettingsWindow : Window
         AutoRestoreBox.IsChecked = true;
         AutoSaveIntervalBox.Text = "15";
         FontFamilyBox.SelectedIndex = 0;
+        LanguageBox.SelectedIndex = 0;
     }
 
     private void FontFamilyBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -98,4 +103,7 @@ public partial class SettingsWindow : Window
         FontFamily = name == "System" ? SystemFonts.MessageFontFamily : new FontFamily(name == "Roboto"
             ? "pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto" : name);
     }
+
+    private MessageBoxResult ShowMessage(string message, string caption)
+        => MessageBox.Show(this, LocalizationService.Translate(message), LocalizationService.Translate(caption));
 }

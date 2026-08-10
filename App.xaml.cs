@@ -15,13 +15,14 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             WriteCrashLog(args.Exception);
-            MessageBox.Show($"CutPic 发生未处理错误，诊断日志已保存：\n{CrashLogPath}\n\n{args.Exception.Message}",
-                "CutPic 启动错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(LocalizationService.Translate($"CutPic 发生未处理错误，诊断日志已保存：\n{CrashLogPath}\n\n{args.Exception.Message}"),
+                LocalizationService.Translate("CutPic 启动错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
             Shutdown(-1);
         };
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-settings")
         {
+            LocalizationService.SetLanguage(e.Args.Length >= 2 ? e.Args[1] : "zh-CN");
             var window = new SettingsWindow(new CutPic.Models.AppSettings());
             window.Show(); window.Close(); Shutdown(); return;
         }
@@ -53,8 +54,8 @@ public partial class App : Application
         catch (Exception ex)
         {
             WriteCrashLog(ex);
-            MessageBox.Show($"CutPic 无法启动，诊断日志已保存：\n{CrashLogPath}\n\n{ex.Message}",
-                "CutPic 启动错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(LocalizationService.Translate($"CutPic 无法启动，诊断日志已保存：\n{CrashLogPath}\n\n{ex.Message}"),
+                LocalizationService.Translate("CutPic 启动错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(-1);
         }
     }

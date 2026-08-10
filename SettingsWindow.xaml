@@ -26,6 +26,10 @@
             <ComboBox x:Name="ConflictPolicyBox" materialDesign:HintAssist.Hint="文件重名处理" Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,14">
               <ComboBoxItem Content="自动追加序号"/><ComboBoxItem Content="覆盖已有文件"/><ComboBoxItem Content="跳过已有文件"/>
             </ComboBox>
+            <ComboBox x:Name="LanguageBox" materialDesign:HintAssist.Hint="界面语言" Margin="0,12,0,0"
+                      Style="{StaticResource MaterialDesignOutlinedComboBox}">
+              <ComboBoxItem Content="简体中文" Tag="zh-CN"/><ComboBoxItem Content="English" Tag="en-US"/>
+            </ComboBox>
             <DockPanel><TextBlock Text="JPG 默认质量"/><TextBlock x:Name="QualityText" DockPanel.Dock="Right" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"/></DockPanel>
             <Slider x:Name="QualitySlider" Minimum="50" Maximum="100" TickFrequency="1" ValueChanged="QualitySlider_ValueChanged" Margin="0,2,0,10"/>
             <CheckBox x:Name="CreateSourceSubfolderBox" Content="按源图片创建子文件夹" Margin="0,4"/>

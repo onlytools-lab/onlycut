@@ -22,7 +22,7 @@ public partial class MainWindow : Window
         public string Path { get; } = path;
         public string Name { get; } = name;
         public string Status { get; set; } = "待检查";
-        public override string ToString() => $"{(Status == "已导出" ? "↑" : Status == "已确认" ? "✓" : Status == "异常" ? "!" : "○")}  {Name}";
+        public override string ToString() => $"{(Status == "已导出" ? "↑" : Status == "已确认" ? "✓" : Status == "异常" ? "!" : "○")}  {LocalizationService.Translate(Status)} · {Name}";
     }
     private readonly record struct DetectionOptions(int Mode, double Sensitivity, int Grouping, double MinimumArea, int Padding);
     private sealed class EditHistory
@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     private bool _autoRestoreSession = true;
     private int _autoSaveIntervalSeconds = 15;
     private string _fontFamilyName = "System";
+    private string _languageCode = "zh-CN";
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
@@ -62,7 +63,14 @@ public partial class MainWindow : Window
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
+        LocalizationService.SetLanguage(_languageCode);
+        LocalizationService.Apply(this);
         ApplyFontFamily();
+        StatusText.LayoutUpdated += (_, _) =>
+        {
+            string translated = LocalizationService.Translate(StatusText.Text);
+            if (translated != StatusText.Text) StatusText.Text = translated;
+        };
         LongSplitModeBox_SelectionChanged(this, null!);
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         _recoveryTimer.Tick += (_, _) => SaveRecoveryProject();
@@ -92,7 +100,8 @@ public partial class MainWindow : Window
             OpenFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true,
             AutoRestoreSession = _autoRestoreSession,
             AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
-            FontFamilyName = _fontFamilyName
+            FontFamilyName = _fontFamilyName,
+            LanguageCode = _languageCode
         };
         var dialog = new SettingsWindow(settings) { Owner = this };
         if (dialog.ShowDialog() != true) return;
@@ -109,8 +118,12 @@ public partial class MainWindow : Window
         _autoRestoreSession = settings.AutoRestoreSession;
         _autoSaveIntervalSeconds = settings.AutoSaveIntervalSeconds;
         _fontFamilyName = settings.FontFamilyName;
+        _languageCode = settings.LanguageCode;
+        LocalizationService.SetLanguage(_languageCode);
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         ApplyFontFamily();
+        LocalizationService.Apply(this);
+        TaskList.Items.Refresh();
         UpdateNamingExample();
         SaveSettings();
         StatusText.Text = "设置已保存";
@@ -163,7 +176,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() != true) return;
         try { LoadProjectDocument(dialog.FileName); _currentProjectPath = dialog.FileName; }
         catch (Exception ex)
-        { MessageBox.Show(this, $"项目文件无法打开：\n{ex.Message}", "打开项目失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+        { ShowMessage( $"项目文件无法打开：\n{ex.Message}", "打开项目失败", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private static string LocalDataDirectory => Environment.GetEnvironmentVariable("CUTPIC_DATA_DIR")
@@ -264,7 +277,7 @@ public partial class MainWindow : Window
             else if (IsLongMode) GenerateLongSlices(false);
             else DetectRegions();
         }
-        catch (Exception ex) { MessageBox.Show(this, $"无法打开图片：\n{ex.Message}", "打开失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { ShowMessage( $"无法打开图片：\n{ex.Message}", "打开失败", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private void Detect_Click(object sender, RoutedEventArgs e) => DetectRegions();
@@ -449,7 +462,7 @@ public partial class MainWindow : Window
 
     private async void Export_Click(object sender, RoutedEventArgs e)
     {
-        if (_tasks.Count == 0) { MessageBox.Show(this, "请先添加图片并确认切割框。", "无法导出"); return; }
+        if (_tasks.Count == 0) { ShowMessage( "请先添加图片并确认切割框。", "无法导出"); return; }
         var dialog = new OpenFolderDialog { Title = "选择导出文件夹" };
         if (dialog.ShowDialog() != true) return;
         string exportDirectory = dialog.FolderName;
@@ -529,10 +542,10 @@ public partial class MainWindow : Window
             });
             TaskList.Items.Refresh();
             StatusText.Text = $"批量导出完成：{_tasks.Count} 个任务，共 {total} 张商品图";
-            MessageBox.Show(this, $"已从 {_tasks.Count} 张宫格图中导出 {total} 张正方形商品图。", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
+            ShowMessage( $"已从 {_tasks.Count} 张宫格图中导出 {total} 张正方形商品图。", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
             if (openFolderAfterExport) OpenFolder(exportDirectory);
         }
-        catch (Exception ex) { TaskList.Items.Refresh(); MessageBox.Show(this, $"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { TaskList.Items.Refresh(); ShowMessage( $"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { IsEnabled = true; }
     }
 
@@ -613,10 +626,10 @@ public partial class MainWindow : Window
             !double.TryParse(MarginXBox.Text, out double marginX) || !double.TryParse(MarginYBox.Text, out double marginY) ||
             !double.TryParse(GapXBox.Text, out double gapX) || !double.TryParse(GapYBox.Text, out double gapY) ||
             rows is < 1 or > 20 || columns is < 1 or > 20)
-        { MessageBox.Show(this, "请输入有效的行列、边距和间距。行列范围为 1–20。", "参数无效"); return; }
+        { ShowMessage( "请输入有效的行列、边距和间距。行列范围为 1–20。", "参数无效"); return; }
         double cellWidth = (_bitmap.PixelWidth - marginX * 2 - gapX * (columns - 1)) / columns;
         double cellHeight = (_bitmap.PixelHeight - marginY * 2 - gapY * (rows - 1)) / rows;
-        if (cellWidth < 20 || cellHeight < 20) { MessageBox.Show(this, "边距或间距过大，无法生成有效选框。", "参数无效"); return; }
+        if (cellWidth < 20 || cellHeight < 20) { ShowMessage( "边距或间距过大，无法生成有效选框。", "参数无效"); return; }
         PushHistory();
         _regions.Clear();
         int number = 1;
@@ -692,7 +705,7 @@ public partial class MainWindow : Window
         }
         catch (ArgumentException ex)
         {
-            MessageBox.Show(this, ex.Message, "长图切分参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowMessage( ex.Message, "长图切分参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -961,7 +974,7 @@ public partial class MainWindow : Window
     {
         if (_tasks.Count == 0 || TransparentBackgroundBox.IsChecked != true)
         {
-            MessageBox.Show(this, "请先添加图片并启用透明 PNG 导出。", "透明结果检查");
+            ShowMessage( "请先添加图片并启用透明 PNG 导出。", "透明结果检查");
             return;
         }
         int tolerance = (int)TransparencyToleranceSlider.Value;
@@ -1007,12 +1020,12 @@ public partial class MainWindow : Window
                 ? "检查完成，没有发现明显异常。"
                 : $"发现 {warnings.Count} 个建议复查的切片：\n\n" + string.Join("\n", warnings.Take(12)) +
                   (warnings.Count > 12 ? $"\n……另有 {warnings.Count - 12} 项" : string.Empty);
-            MessageBox.Show(this, message, "透明结果检查", MessageBoxButton.OK,
+            ShowMessage( message, "透明结果检查", MessageBoxButton.OK,
                 warnings.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"检查失败：\n{ex.Message}", "透明结果检查", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowMessage( $"检查失败：\n{ex.Message}", "透明结果检查", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally { IsEnabled = true; }
     }
@@ -1186,6 +1199,7 @@ public partial class MainWindow : Window
             _autoRestoreSession = settings.AutoRestoreSession;
             _autoSaveIntervalSeconds = Math.Clamp(settings.AutoSaveIntervalSeconds, 5, 300);
             _fontFamilyName = settings.FontFamilyName;
+            _languageCode = settings.LanguageCode;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1231,6 +1245,7 @@ public partial class MainWindow : Window
                 AutoRestoreSession = _autoRestoreSession,
                 AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
                 FontFamilyName = _fontFamilyName,
+                LanguageCode = _languageCode,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,
@@ -1257,4 +1272,8 @@ public partial class MainWindow : Window
             FontFamily = SystemFonts.MessageFontFamily;
         }
     }
+
+    private MessageBoxResult ShowMessage(string message, string caption,
+        MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxImage image = MessageBoxImage.None)
+        => MessageBox.Show(this, LocalizationService.Translate(message), LocalizationService.Translate(caption), buttons, image);
 }
