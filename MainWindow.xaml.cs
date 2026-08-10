@@ -52,6 +52,17 @@ public partial class MainWindow : Window
     private int _autoSaveIntervalSeconds = 15;
     private string _fontFamilyName = "System";
     private string _languageCode = "zh-CN";
+    private CancellationTokenSource? _exportCancellation;
+    private bool _isExporting;
+    private readonly record struct ExportProgressInfo(int Current, int Total, string FileName);
+    private sealed class ExportSummary
+    {
+        public int Success { get; set; }
+        public int Skipped { get; set; }
+        public int Failed { get; set; }
+        public bool Cancelled { get; set; }
+        public List<string> Errors { get; } = [];
+    }
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
@@ -462,6 +473,7 @@ public partial class MainWindow : Window
 
     private async void Export_Click(object sender, RoutedEventArgs e)
     {
+        if (_isExporting) return;
         if (_tasks.Count == 0) { ShowMessage( "请先添加图片并确认切割框。", "无法导出"); return; }
         var dialog = new OpenFolderDialog { Title = "选择导出文件夹" };
         if (dialog.ShowDialog() != true) return;
@@ -492,14 +504,34 @@ public partial class MainWindow : Window
             ? Math.Clamp(parsedDigits, 1, 8) : 2;
         bool createSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true;
         bool openFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true;
+        _isExporting = true;
+        _exportCancellation = new CancellationTokenSource();
+        var token = _exportCancellation.Token;
+        WorkspaceGrid.IsEnabled = false; AppBarActions.IsEnabled = false;
+        ExportProgressPanel.Visibility = Visibility.Visible;
+        ExportProgressBar.IsIndeterminate = true;
+        int completed = 0;
+        int estimatedTotal = Math.Max(1, _regionStates.Values.Sum(regions => regions.Count));
+        var failures = new List<string>();
+        int succeeded = 0, skipped = 0, failed = 0;
+        IProgress<ExportProgressInfo> progress = new Progress<ExportProgressInfo>(value =>
+        {
+            ExportProgressBar.IsIndeterminate = false;
+            ExportProgressBar.Maximum = Math.Max(1, value.Total);
+            ExportProgressBar.Value = value.Current;
+            ExportProgressText.Text = $"{value.Current} / {value.Total}";
+            StatusText.Text = $"正在导出：{value.FileName}";
+        });
         try
         {
-            IsEnabled = false;
             int total = 0;
             await Task.Run(() =>
             {
                 foreach (var task in _tasks)
                 {
+                    if (token.IsCancellationRequested) break;
+                    try
+                    {
                     var bitmap = ImageProcessingService.LoadImage(task.Path);
                     bool isLongTask = _longModeStates.TryGetValue(task.Path, out bool taskMode) && taskMode;
                     var regions = _regionStates.TryGetValue(task.Path, out var saved)
@@ -520,8 +552,14 @@ public partial class MainWindow : Window
                         ? System.IO.Path.Combine(exportDirectory, SanitizeFileName(baseName, "图片"))
                         : exportDirectory;
                     Directory.CreateDirectory(taskOutputDirectory);
+                    estimatedTotal = Math.Max(estimatedTotal, completed + regions.Count);
+                    int failuresBeforeTask = failed;
                     for (int i = 0; i < regions.Count; i++)
                     {
+                        if (token.IsCancellationRequested) break;
+                        progress.Report(new ExportProgressInfo(completed, estimatedTotal, task.Name));
+                        try
+                        {
                         var output = isLongTask
                             ? ImageProcessingService.CreateCrop(bitmap, regions[i].Bounds)
                             : transparentBackground && regions[i].RemoveBackground
@@ -533,20 +571,47 @@ public partial class MainWindow : Window
                             namingPrefix, namingSuffix, namingStart, namingDigits);
                         string requestedPath = System.IO.Path.Combine(taskOutputDirectory, fileName);
                         string? path = ResolveOutputPath(requestedPath, conflictPolicy);
-                        if (path is null) continue;
+                        if (path is null) { skipped++; completed++; continue; }
                         ImageProcessingService.Save(output, path, format, jpegQuality);
-                        total++;
+                        total++; succeeded++;
+                        }
+                        catch (Exception ex)
+                        {
+                            failed++; failures.Add($"{task.Name} / #{i + 1}: {ex.Message}");
+                        }
+                        completed++;
                     }
-                    task.Status = "已导出";
+                    task.Status = failed > failuresBeforeTask ? "异常" : "已导出";
+                    }
+                    catch (Exception ex)
+                    {
+                        task.Status = "异常"; failed++; failures.Add($"{task.Name}: {ex.Message}");
+                    }
                 }
             });
             TaskList.Items.Refresh();
-            StatusText.Text = $"批量导出完成：{_tasks.Count} 个任务，共 {total} 张商品图";
-            ShowMessage( $"已从 {_tasks.Count} 张宫格图中导出 {total} 张正方形商品图。", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
-            if (openFolderAfterExport) OpenFolder(exportDirectory);
+            bool cancelled = token.IsCancellationRequested;
+            string detail = failures.Count == 0 ? string.Empty : "\n\n失败明细：\n" + string.Join("\n", failures.Take(15)) +
+                (failures.Count > 15 ? $"\n……另有 {failures.Count - 15} 项" : string.Empty);
+            string message = $"成功：{succeeded}\n跳过：{skipped}\n失败：{failed}" + detail;
+            StatusText.Text = cancelled ? "导出已取消，已完成的文件予以保留" : "批量导出完成";
+            ShowMessage(message, cancelled ? "导出已取消" : "导出结果汇总", MessageBoxButton.OK,
+                failed > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            if (openFolderAfterExport && succeeded > 0) OpenFolder(exportDirectory);
         }
-        catch (Exception ex) { TaskList.Items.Refresh(); ShowMessage( $"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
-        finally { IsEnabled = true; }
+        catch (Exception ex) { TaskList.Items.Refresh(); ShowMessage($"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally
+        {
+            _exportCancellation?.Dispose(); _exportCancellation = null; _isExporting = false;
+            WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
+            ExportProgressPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void CancelExport_Click(object sender, RoutedEventArgs e)
+    {
+        _exportCancellation?.Cancel();
+        StatusText.Text = "正在取消导出，请等待当前切片处理完成……";
     }
 
     private static List<string> ValidateRegions(BitmapSource bitmap, IReadOnlyList<CropRegion> regions, bool longMode)

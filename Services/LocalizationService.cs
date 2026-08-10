@@ -53,6 +53,9 @@ public static class LocalizationService
         ["自动保存间隔必须在 5–300 秒之间。"]="The auto-save interval must be between 5 and 300 seconds.",
         ["已从"]="Exported ", ["张宫格图中导出"]=" source images into ", ["张正方形商品图。"]=" square product images.",
         ["发现"]="Found ", ["个建议复查的切片"]=" slices to review", ["检查完成，没有发现明显异常。"]="Check complete. No obvious issues found."
+        , ["取消导出"]="Cancel Export", ["正在导出"]="Exporting", ["正在取消导出，请等待当前切片处理完成……"]="Cancelling export. Waiting for the current slice to finish…",
+        ["导出已取消，已完成的文件予以保留"]="Export cancelled. Completed files were kept.", ["导出已取消"]="Export Cancelled", ["导出结果汇总"]="Export Summary",
+        ["成功"]="Succeeded", ["跳过"]="Skipped", ["失败"]="Failed", ["失败明细"]="Failure Details", ["批量导出完成"]="Batch export complete"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";
