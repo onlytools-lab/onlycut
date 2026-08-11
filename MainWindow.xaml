@@ -62,6 +62,7 @@
                 <Separator/>
                 <MenuItem Header="打开项目" Click="OpenProject_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="FolderCogOutline"/></MenuItem.Icon></MenuItem>
                 <MenuItem Header="保存项目" Click="SaveProject_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="ContentSaveOutline"/></MenuItem.Icon></MenuItem>
+                <MenuItem x:Name="RecentProjectsMenuItem" Header="最近项目"/>
                 <Separator/>
                 <MenuItem Header="应用设置" Click="Settings_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="CogOutline"/></MenuItem.Icon></MenuItem>
               </ContextMenu>

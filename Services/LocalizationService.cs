@@ -100,7 +100,8 @@ public static class LocalizationService
         , ["图片已旋转，长图切片已按当前参数重新生成"]="Image rotated; long-image slices were regenerated using the current settings"
         , ["任务筛选"]="Task Filter", ["全部任务"]="All Tasks"
         , ["当前筛选条件下没有任务"]="No tasks match the current filter"
-        , ["更多操作"]="More Actions", ["打开项目"]="Open Project"
+        , ["更多操作"]="More Actions", ["打开项目"]="Open Project", ["最近项目"]="Recent Projects"
+        , ["暂无最近项目"]="No Recent Projects", ["从剪贴板粘贴图片"]="Paste Image from Clipboard"
         , ["折叠/展开任务栏"]="Collapse/Expand Task Panel", ["折叠/展开参数栏"]="Collapse/Expand Settings Panel"
         , ["配置来自更高版本，当前版本不会覆盖该文件"]="Settings were created by a newer version and will not be overwritten"
     };

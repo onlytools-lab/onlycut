@@ -49,5 +49,6 @@ public sealed class AppSettings
     public double RightSidebarWidth { get; set; } = 372;
     public bool IsLeftSidebarCollapsed { get; set; }
     public bool IsRightSidebarCollapsed { get; set; }
+    public List<string> RecentProjectPaths { get; set; } = [];
     public Dictionary<string, string> Shortcuts { get; set; } = Services.ShortcutService.CreateDefaults();
 }

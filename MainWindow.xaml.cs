@@ -82,6 +82,7 @@ public partial class MainWindow : Window
     private double _rightSidebarWidth = 372;
     private bool _isLeftSidebarCollapsed;
     private bool _isRightSidebarCollapsed;
+    private List<string> _recentProjectPaths = [];
     private readonly record struct ExportProgressInfo(int Current, int Total, string FileName);
     private sealed class ExportSummary
     {
@@ -111,6 +112,7 @@ public partial class MainWindow : Window
         _presets = PresetService.Load(PresetsPath);
         RefreshPresetList();
         LocalizationService.Apply(this);
+        RefreshRecentProjectsMenu();
         UpdateShortcutToolTips();
         ApplyFontFamily();
         UpdateResponsiveToolbar();
@@ -378,6 +380,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() != true) return;
         SaveProjectDocument(dialog.FileName);
         _currentProjectPath = dialog.FileName;
+        AddRecentProject(dialog.FileName);
         StatusText.Text = $"项目已保存：{dialog.FileName}";
     }
 
@@ -385,7 +388,7 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog { Title = "打开 CutPic 项目", Filter = "CutPic 项目|*.cutpic;*.json|所有文件|*.*" };
         if (dialog.ShowDialog() != true) return;
-        try { LoadProjectDocument(dialog.FileName); _currentProjectPath = dialog.FileName; }
+        try { LoadProjectDocument(dialog.FileName); _currentProjectPath = dialog.FileName; AddRecentProject(dialog.FileName); }
         catch (Exception ex)
         { ShowMessage( $"项目文件无法打开：\n{ex.Message}", "打开项目失败", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
@@ -394,6 +397,65 @@ public partial class MainWindow : Window
         ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CutPic");
     private static string RecoveryProjectPath => System.IO.Path.Combine(LocalDataDirectory, "last-session.cutpic");
     private static string PresetsPath => System.IO.Path.Combine(LocalDataDirectory, "presets.json");
+
+    private void AddRecentProject(string path)
+    {
+        path = System.IO.Path.GetFullPath(path);
+        _recentProjectPaths.RemoveAll(item => string.Equals(item, path, StringComparison.OrdinalIgnoreCase));
+        _recentProjectPaths.Insert(0, path);
+        if (_recentProjectPaths.Count > 8) _recentProjectPaths.RemoveRange(8, _recentProjectPaths.Count - 8);
+        RefreshRecentProjectsMenu();
+        SaveSettings();
+    }
+
+    private void RefreshRecentProjectsMenu()
+    {
+        if (RecentProjectsMenuItem is null) return;
+        _recentProjectPaths = _recentProjectPaths.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase).Take(8).ToList();
+        RecentProjectsMenuItem.Items.Clear();
+        if (_recentProjectPaths.Count == 0)
+        {
+            RecentProjectsMenuItem.Items.Add(new MenuItem { Header = LocalizationService.Translate("暂无最近项目"), IsEnabled = false });
+            return;
+        }
+        foreach (string path in _recentProjectPaths)
+        {
+            var item = new MenuItem { Header = System.IO.Path.GetFileNameWithoutExtension(path), ToolTip = path, Tag = path };
+            item.Click += RecentProject_Click;
+            RecentProjectsMenuItem.Items.Add(item);
+        }
+    }
+
+    private void RecentProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string path }) return;
+        try { LoadProjectDocument(path); _currentProjectPath = path; AddRecentProject(path); }
+        catch (Exception ex) { ShowMessage($"项目文件无法打开：\n{ex.Message}", "打开项目失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private void PasteImageFromClipboard()
+    {
+        try
+        {
+            if (!Clipboard.ContainsImage() || Clipboard.GetImage() is not BitmapSource bitmap)
+            {
+                StatusText.Text = "剪贴板中没有图片";
+                return;
+            }
+            string directory = System.IO.Path.Combine(LocalDataDirectory, "ClipboardImports");
+            Directory.CreateDirectory(directory);
+            string path = System.IO.Path.Combine(directory, $"clipboard-{DateTime.Now:yyyyMMdd-HHmmss-fff}.png");
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None)) encoder.Save(stream);
+            AddFiles([path]);
+            StatusText.Text = "已从剪贴板粘贴图片";
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"无法读取剪贴板图片：\n{ex.Message}", "粘贴失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
 
     private ProjectDocument BuildProjectDocument() => new()
     {
@@ -1607,6 +1669,9 @@ public partial class MainWindow : Window
             _isPickingBackgroundColor = false; Overlay.Cursor = Cursors.Arrow;
             StatusText.Text = "已取消背景取色"; e.Handled = true;
         }
+        else if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control &&
+                 Keyboard.FocusedElement is not TextBox and not PasswordBox and not ComboBox)
+        { PasteImageFromClipboard(); e.Handled = true; }
         else if (TryExecuteShortcut(e)) e.Handled = true;
     }
 
@@ -1884,6 +1949,8 @@ public partial class MainWindow : Window
             _rightSidebarWidth = settings.RightSidebarWidth;
             _isLeftSidebarCollapsed = settings.IsLeftSidebarCollapsed;
             _isRightSidebarCollapsed = settings.IsRightSidebarCollapsed;
+            _recentProjectPaths = settings.RecentProjectPaths;
+            RefreshRecentProjectsMenu();
             ApplySidebarLayout();
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
@@ -1943,6 +2010,7 @@ public partial class MainWindow : Window
                 RightSidebarWidth = _isRightSidebarCollapsed ? _rightSidebarWidth : Math.Clamp(RightSidebarColumn.ActualWidth, 300, 560),
                 IsLeftSidebarCollapsed = _isLeftSidebarCollapsed,
                 IsRightSidebarCollapsed = _isRightSidebarCollapsed,
+                RecentProjectPaths = [.. _recentProjectPaths],
                 Shortcuts = new Dictionary<string, string>(_shortcuts, StringComparer.OrdinalIgnoreCase),
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
