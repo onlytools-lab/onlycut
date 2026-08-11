@@ -43,4 +43,5 @@ public sealed class AppSettings
     public string FontFamilyName { get; set; } = "System";
     public string LanguageCode { get; set; } = "zh-CN";
     public string DefaultPresetId { get; set; } = "builtin-card";
+    public bool OnlyConfirmedTasks { get; set; }
 }

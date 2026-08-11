@@ -89,6 +89,14 @@
               </StackPanel>
             </Border>
           </StackPanel>
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <CheckBox x:Name="OnlyConfirmedTasksBox" Content="仅导出已确认任务" Margin="4,3,0,8"/>
+            <UniformGrid Columns="2">
+              <Button Content="下一异常" Click="NextIssue_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,0,3,5"/>
+              <Button Content="确认无警告" Click="ConfirmSafeTasks_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="3,0,0,5"/>
+              <Button Content="重试失败任务" Click="RetryFailedTasks_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,3" Grid.ColumnSpan="2"/>
+            </UniformGrid>
+          </StackPanel>
           <ListBox x:Name="TaskList" Background="Transparent" BorderThickness="0" SelectionChanged="TaskList_SelectionChanged"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
         </DockPanel>

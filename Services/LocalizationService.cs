@@ -70,6 +70,10 @@ public static class LocalizationService
         ["同名文件将被覆盖"]="Existing file will be overwritten", ["同名文件将被跳过"]="Existing file will be skipped", ["同名文件将自动改名"]="File will be automatically renamed",
         ["透明 PNG"]="Transparent PNG", ["无法生成预览"]="Could not generate preview", ["几乎没有移除背景"]="Almost no background removed",
         ["透明区域过多"]="Too much transparent area", ["半透明边缘较多"]="Too many semi-transparent edges"
+        , ["仅导出已确认任务"]="Export Confirmed Tasks Only", ["下一异常"]="Next Issue", ["确认无警告"]="Confirm Safe Tasks", ["重试失败任务"]="Retry Failed Tasks",
+        ["切片"]="Slices", ["已定位异常任务"]="Issue task selected", ["没有需要处理的异常任务"]="No issue tasks to process",
+        ["个无警告任务"]=" safe task(s)", ["没有可重试的失败任务。"]="There are no failed tasks to retry.",
+        ["没有符合当前条件的可导出任务。"]="No tasks match the current export filter."
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";

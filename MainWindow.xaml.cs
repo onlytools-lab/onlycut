@@ -22,7 +22,10 @@ public partial class MainWindow : Window
         public string Path { get; } = path;
         public string Name { get; } = name;
         public string Status { get; set; } = "待检查";
-        public override string ToString() => $"{(Status == "已导出" ? "↑" : Status == "已确认" ? "✓" : Status == "异常" ? "!" : "○")}  {LocalizationService.Translate(Status)} · {Name}";
+        public int SliceCount { get; set; }
+        public int WarningCount { get; set; }
+        public string LastError { get; set; } = string.Empty;
+        public override string ToString() => $"{(Status == "已导出" ? "↑" : Status == "已确认" ? "✓" : Status == "异常" ? "!" : "○")}  {LocalizationService.Translate(Status)} · {Name}\n    {LocalizationService.Translate("切片")} {SliceCount} · {LocalizationService.Translate("警告")} {WarningCount}";
     }
     private readonly record struct DetectionOptions(int Mode, double Sensitivity, int Grouping, double MinimumArea, int Padding);
     private sealed class EditHistory
@@ -56,6 +59,7 @@ public partial class MainWindow : Window
     private string _languageCode = "zh-CN";
     private CancellationTokenSource? _exportCancellation;
     private bool _isExporting;
+    private bool _retryFailedOnly;
     private readonly record struct ExportProgressInfo(int Current, int Total, string FileName);
     private sealed class ExportSummary
     {
@@ -296,6 +300,7 @@ public partial class MainWindow : Window
             SampledBackgroundColor = _manualBackgroundColors.TryGetValue(task.Path, out Color sampled)
                 ? sampled.ToString() : null,
             Status = task.Status,
+            SliceCount = task.SliceCount, WarningCount = task.WarningCount, LastError = task.LastError,
             Regions = (_regionStates.TryGetValue(task.Path, out var regions) ? regions : [])
                 .Select(region => new CropBoundsDocument
                 {
@@ -336,7 +341,8 @@ public partial class MainWindow : Window
         foreach (var savedTask in document.Tasks)
         {
             if (!File.Exists(savedTask.ImagePath)) { missing++; continue; }
-            var task = new ImageTask(savedTask.ImagePath, System.IO.Path.GetFileName(savedTask.ImagePath)) { Status = savedTask.Status };
+            var task = new ImageTask(savedTask.ImagePath, System.IO.Path.GetFileName(savedTask.ImagePath))
+                { Status = savedTask.Status, SliceCount = savedTask.SliceCount, WarningCount = savedTask.WarningCount, LastError = savedTask.LastError };
             _tasks.Add(task); TaskList.Items.Add(task); _longModeStates[task.Path] = savedTask.IsLongMode;
             if (!string.IsNullOrWhiteSpace(savedTask.SampledBackgroundColor))
             {
@@ -437,6 +443,12 @@ public partial class MainWindow : Window
             Overlay.Children.Add(border);
         }
         UpdateBoundsBoxes();
+        if (TaskList.SelectedItem is ImageTask currentTask && currentTask.SliceCount != _regions.Count)
+        {
+            currentTask.SliceCount = _regions.Count;
+            if (currentTask.Status == "已导出") currentTask.Status = "待检查";
+            TaskList.Items.Refresh();
+        }
         _suppressRegionBackgroundChange = true;
         if (RemoveBackgroundForRegionBox is not null)
         {
@@ -568,8 +580,12 @@ public partial class MainWindow : Window
         if (_isExporting) return;
         if (_tasks.Count == 0) { ShowMessage( "请先添加图片并确认切割框。", "无法导出"); return; }
         var dialog = new OpenFolderDialog { Title = "选择导出文件夹" };
-        if (dialog.ShowDialog() != true) return;
+        if (dialog.ShowDialog() != true) { _retryFailedOnly = false; return; }
         string exportDirectory = dialog.FolderName;
+        var exportTasks = (_retryFailedOnly ? _tasks.Where(task => task.Status == "异常")
+            : OnlyConfirmedTasksBox.IsChecked == true ? _tasks.Where(task => task.Status == "已确认") : _tasks).ToList();
+        _retryFailedOnly = false;
+        if (exportTasks.Count == 0) { ShowMessage("没有符合当前条件的可导出任务。", "无法导出"); return; }
         bool transparentBackground = TransparentBackgroundBox.IsChecked == true && !IsLongMode;
         string format = transparentBackground ? "PNG" : ((ComboBoxItem)FormatBox.SelectedItem).Content?.ToString() ?? "PNG";
         string extension = format == "JPG" ? ".jpg" : ".png";
@@ -604,7 +620,7 @@ public partial class MainWindow : Window
             var previewItems = await Task.Run(() =>
             {
                 var items = new List<ExportPreviewItem>();
-                foreach (var task in _tasks)
+                foreach (var task in exportTasks)
                 {
                     try
                     {
@@ -654,6 +670,13 @@ public partial class MainWindow : Window
                 }
                 return items;
             });
+            foreach (var task in exportTasks)
+            {
+                task.SliceCount = previewItems.Count(item => item.SourcePath == task.Path && item.RegionIndex >= 0);
+                task.WarningCount = previewItems.Count(item => item.SourcePath == task.Path && item.HasWarning);
+                if (task.WarningCount > 0 && task.Status == "已确认") task.Status = "待检查";
+            }
+            TaskList.Items.Refresh();
             var previewDialog = new ExportPreviewWindow(previewItems) { Owner = this };
             WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
             if (previewDialog.ShowDialog() != true) { StatusText.Text = "已取消导出"; return; }
@@ -687,7 +710,7 @@ public partial class MainWindow : Window
             int total = 0;
             await Task.Run(() =>
             {
-                foreach (var task in _tasks)
+                foreach (var task in exportTasks)
                 {
                     if (token.IsCancellationRequested) break;
                     try
@@ -714,6 +737,7 @@ public partial class MainWindow : Window
                     Directory.CreateDirectory(taskOutputDirectory);
                     estimatedTotal = Math.Max(estimatedTotal, completed + regions.Count);
                     int failuresBeforeTask = failed;
+                    task.LastError = string.Empty;
                     for (int i = 0; i < regions.Count; i++)
                     {
                         if (token.IsCancellationRequested) break;
@@ -739,7 +763,7 @@ public partial class MainWindow : Window
                         }
                         catch (Exception ex)
                         {
-                            failed++; failures.Add($"{task.Name} / #{i + 1}: {ex.Message}");
+                            failed++; task.LastError = ex.Message; failures.Add($"{task.Name} / #{i + 1}: {ex.Message}");
                         }
                         completed++;
                     }
@@ -747,7 +771,7 @@ public partial class MainWindow : Window
                     }
                     catch (Exception ex)
                     {
-                        task.Status = "异常"; failed++; failures.Add($"{task.Name}: {ex.Message}");
+                        task.Status = "异常"; task.LastError = ex.Message; failed++; failures.Add($"{task.Name}: {ex.Message}");
                     }
                 }
             });
@@ -1023,6 +1047,37 @@ public partial class MainWindow : Window
         SaveRecoveryProject();
     }
 
+    private void NextIssue_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tasks.Count == 0) return;
+        int start = Math.Max(-1, TaskList.SelectedIndex);
+        for (int offset = 1; offset <= _tasks.Count; offset++)
+        {
+            int index = (start + offset) % _tasks.Count;
+            if (_tasks[index].Status == "异常" || _tasks[index].WarningCount > 0)
+            {
+                TaskList.SelectedIndex = index; TaskList.ScrollIntoView(TaskList.SelectedItem);
+                StatusText.Text = $"已定位异常任务：{_tasks[index].Name}"; return;
+            }
+        }
+        StatusText.Text = "没有需要处理的异常任务";
+    }
+
+    private void ConfirmSafeTasks_Click(object sender, RoutedEventArgs e)
+    {
+        int count = 0;
+        foreach (var task in _tasks.Where(task => task.SliceCount > 0 && task.WarningCount == 0 && task.Status != "异常"))
+        { task.Status = "已确认"; count++; }
+        TaskList.Items.Refresh(); SaveRecoveryProject();
+        StatusText.Text = $"已确认 {count} 个无警告任务";
+    }
+
+    private void RetryFailedTasks_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tasks.All(task => task.Status != "异常")) { ShowMessage("没有可重试的失败任务。", "重试失败任务"); return; }
+        _retryFailedOnly = true; Export_Click(sender, e);
+    }
+
     private void RemoveTask_Click(object sender, RoutedEventArgs e)
     {
         if (TaskList.SelectedItem is not ImageTask task) return;
@@ -1243,6 +1298,12 @@ public partial class MainWindow : Window
                 }
                 return result;
             });
+            foreach (var task in _tasks)
+            {
+                task.WarningCount = warnings.Count(warning => warning.StartsWith(task.Name + " /", StringComparison.CurrentCultureIgnoreCase));
+                if (task.WarningCount > 0 && task.Status == "已确认") task.Status = "待检查";
+            }
+            TaskList.Items.Refresh();
             string message = warnings.Count == 0
                 ? "检查完成，没有发现明显异常。"
                 : $"发现 {warnings.Count} 个建议复查的切片：\n\n" + string.Join("\n", warnings.Take(12)) +
@@ -1428,6 +1489,7 @@ public partial class MainWindow : Window
             _fontFamilyName = settings.FontFamilyName;
             _languageCode = settings.LanguageCode;
             _defaultPresetId = settings.DefaultPresetId;
+            OnlyConfirmedTasksBox.IsChecked = settings.OnlyConfirmedTasks;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1475,6 +1537,7 @@ public partial class MainWindow : Window
                 FontFamilyName = _fontFamilyName,
                 LanguageCode = _languageCode,
                 DefaultPresetId = _defaultPresetId,
+                OnlyConfirmedTasks = OnlyConfirmedTasksBox.IsChecked == true,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,
