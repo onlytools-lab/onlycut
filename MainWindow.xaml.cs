@@ -76,6 +76,8 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _exportCancellation;
     private bool _isExporting;
     private bool _retryFailedOnly;
+    private bool _settingsWriteBlocked;
+    private bool _recoveryWriteBlocked;
     private readonly record struct ExportProgressInfo(int Current, int Total, string FileName);
     private sealed class ExportSummary
     {
@@ -397,7 +399,7 @@ public partial class MainWindow : Window
     }
 
     private void SaveRecoveryProject()
-    { try { SaveProjectDocument(RecoveryProjectPath); } catch { } }
+    { if (_recoveryWriteBlocked) return; try { SaveProjectDocument(RecoveryProjectPath); } catch { } }
 
     private void RestoreRecoveryProject()
     {
@@ -407,6 +409,7 @@ public partial class MainWindow : Window
             var document = AtomicFileService.ReadJson<ProjectDocument>(RecoveryProjectPath);
             if (document?.Tasks.Count > 0) LoadProjectDocument(RecoveryProjectPath, true);
         }
+        catch (UnsupportedConfigurationVersionException) { _recoveryWriteBlocked = true; }
         catch { }
     }
 
@@ -414,6 +417,7 @@ public partial class MainWindow : Window
     {
         var document = AtomicFileService.ReadJson<ProjectDocument>(path)
             ?? throw new InvalidDataException("项目文件内容为空或格式无效。");
+        if (ConfigurationMigrationService.Migrate(document)) AtomicFileService.WriteJson(path, document);
         _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
         _manualBackgroundColors.Clear(); _imageTransforms.Clear();
         int missing = 0;
@@ -1034,7 +1038,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string BuildExportFileName(string sourceBaseName, bool isLong, int zeroBasedIndex,
+    internal static string BuildExportFileName(string sourceBaseName, bool isLong, int zeroBasedIndex,
         string extension, int namingMode, string prefix, string suffix, int startNumber, int digits)
     {
         string root = namingMode == 1 ? SanitizeFileName(prefix, "切片") : SanitizeFileName(sourceBaseName, "图片");
@@ -1783,6 +1787,7 @@ public partial class MainWindow : Window
             if (!File.Exists(SettingsPath)) return;
             var settings = AtomicFileService.ReadJson<AppSettings>(SettingsPath);
             if (settings is null) return;
+            if (ConfigurationMigrationService.Migrate(settings)) AtomicFileService.WriteJson(SettingsPath, settings);
             SizeBox.SelectedIndex = Math.Clamp(settings.OutputSizeIndex, 0, SizeBox.Items.Count - 1);
             FormatBox.SelectedIndex = Math.Clamp(settings.FormatIndex, 0, FormatBox.Items.Count - 1);
             ConflictPolicyBox.SelectedIndex = Math.Clamp(settings.ConflictPolicyIndex, 0, ConflictPolicyBox.Items.Count - 1);
@@ -1828,10 +1833,16 @@ public partial class MainWindow : Window
             UpdateNamingExample();
             ApplyFontFamily();
         }
+        catch (UnsupportedConfigurationVersionException)
+        {
+            _settingsWriteBlocked = true;
+            StatusText.Text = "配置来自更高版本，当前版本不会覆盖该文件";
+        }
         catch { StatusText.Text = "配置读取失败，已使用默认设置"; }
     }
     private void SaveSettings()
     {
+        if (_settingsWriteBlocked) return;
         try
         {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsPath)!);
@@ -1867,6 +1878,7 @@ public partial class MainWindow : Window
                 LongCustomHeights = LongCustomHeightsBox.Text,
                 SmartTargetHeight = SmartTargetHeightBox.Text, SmartSearchRange = SmartSearchRangeBox.Text
             };
+            ConfigurationMigrationService.Migrate(settings);
             AtomicFileService.WriteJson(SettingsPath, settings);
         }
         catch { }

@@ -27,6 +27,7 @@ phase1-regression/
 smart-split-regression/
 transparent-regression*/
 published-*-smoke/
+test-results/
 
 # OS files
 Thumbs.db

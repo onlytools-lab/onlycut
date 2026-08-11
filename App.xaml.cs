@@ -5,6 +5,7 @@ using CutPic.Services;
 using System.IO;
 using System.Text;
 using CutPic.Models;
+using System.Diagnostics;
 
 namespace CutPic;
 
@@ -21,6 +22,11 @@ public partial class App : Application
             args.Handled = true;
             Shutdown(-1);
         };
+        if (e.Args.Length >= 1 && e.Args[0] == "--self-test")
+        {
+            string reportPath = e.Args.Length >= 2 ? e.Args[1] : Path.Combine(Path.GetTempPath(), "CutPic-self-test.txt");
+            Shutdown(RunSelfTests(reportPath)); return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-settings")
         {
             LocalizationService.SetLanguage(e.Args.Length >= 2 ? e.Args[1] : "zh-CN");
@@ -118,6 +124,107 @@ public partial class App : Application
             File.WriteAllText(CrashLogPath, text);
         }
         catch { }
+    }
+
+    private static int RunSelfTests(string reportPath)
+    {
+        var report = new List<string>
+        {
+            $"CutPic self-test", $"Version: {typeof(App).Assembly.GetName().Version}",
+            $"Runtime: {Environment.Version}", $"Started: {DateTimeOffset.Now:O}", string.Empty
+        };
+        int failed = 0;
+        void Test(string name, Action action)
+        {
+            var timer = Stopwatch.StartNew();
+            try { action(); report.Add($"PASS  {name}  ({timer.ElapsedMilliseconds} ms)"); }
+            catch (Exception ex) { failed++; report.Add($"FAIL  {name}  ({timer.ElapsedMilliseconds} ms)\n      {ex}"); }
+        }
+
+        string isolatedData = Path.Combine(Path.GetTempPath(), $"CutPicSelfTest-{Guid.NewGuid():N}");
+        string? previousData = Environment.GetEnvironmentVariable("CUTPIC_DATA_DIR");
+        Environment.SetEnvironmentVariable("CUTPIC_DATA_DIR", isolatedData);
+        try
+        {
+            Test("EXIF orientations and metadata", RunExifSmokeTest);
+            Test("Manual transform mapping", RunManualTransformSmokeTest);
+            Test("Long-image divider continuity", RunLongEditSmokeTest);
+            Test("Atomic write and backup recovery", RunAtomicFileSmokeTest);
+            Test("Settings and project migration", RunMigrationSmokeTest);
+            Test("Image output and thumbnail pipeline", RunImagePipelineSmokeTest);
+            Test("Shortcut defaults and export naming", RunConfigurationSmokeTest);
+            Test("Preset persistence", () =>
+            {
+                string path = Path.Combine(isolatedData, "presets.json");
+                var presets = PresetService.Load(path);
+                presets.Add(new ProcessingPreset { Name = "Self Test", DetectionModeIndex = 2 });
+                PresetService.Save(path, presets);
+                if (PresetService.Load(path).All(preset => preset.Name != "Self Test")) throw new InvalidDataException("Preset persistence failed.");
+            });
+            Test("Chinese and English settings windows", () =>
+            {
+                LocalizationService.SetLanguage("zh-CN"); var zh = new SettingsWindow(new AppSettings()); zh.Show(); zh.Close();
+                LocalizationService.SetLanguage("en-US"); var en = new SettingsWindow(new AppSettings()); en.Show(); en.Close();
+            });
+            Test("Main window startup", () => { var window = new MainWindow(); window.Show(); window.Close(); });
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CUTPIC_DATA_DIR", previousData);
+            try { if (Directory.Exists(isolatedData)) Directory.Delete(isolatedData, true); } catch { }
+        }
+        report.Add(string.Empty); report.Add(failed == 0 ? "RESULT: PASSED" : $"RESULT: FAILED ({failed})");
+        AtomicFileService.WriteAllText(reportPath, string.Join(Environment.NewLine, report));
+        return failed == 0 ? 0 : -1;
+    }
+
+    private static void RunMigrationSmokeTest()
+    {
+        var settings = new AppSettings
+        {
+            SchemaVersion = 0, LanguageCode = "unsupported", AutoSaveIntervalSeconds = 0,
+            Shortcuts = new Dictionary<string, string> { ["OpenImages"] = "Ctrl+P" }
+        };
+        if (!ConfigurationMigrationService.Migrate(settings) || settings.SchemaVersion != ConfigurationMigrationService.CurrentSettingsVersion ||
+            settings.LanguageCode != "zh-CN" || settings.AutoSaveIntervalSeconds != 15 ||
+            settings.Shortcuts.Count != ShortcutService.Definitions.Count || settings.Shortcuts["OpenImages"] != "Ctrl+P")
+            throw new InvalidDataException("Settings migration failed.");
+        var project = new ProjectDocument { Version = 3, Tasks = [new ProjectTaskDocument { Transforms = null!, Regions = null! }] };
+        if (!ConfigurationMigrationService.Migrate(project) || project.Version != 4 || project.Tasks[0].Transforms is null || project.Tasks[0].Regions is null)
+            throw new InvalidDataException("Project migration failed.");
+        try
+        {
+            ConfigurationMigrationService.Migrate(new AppSettings { SchemaVersion = 999 });
+            throw new InvalidDataException("Future settings version was accepted.");
+        }
+        catch (UnsupportedConfigurationVersionException) { }
+    }
+
+    private static void RunImagePipelineSmokeTest()
+    {
+        const int width = 80, height = 50, stride = width * 4;
+        var pixels = new byte[stride * height];
+        for (int i = 0; i < pixels.Length; i += 4) { pixels[i] = 210; pixels[i + 1] = 170; pixels[i + 2] = 80; pixels[i + 3] = 255; }
+        var source = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride); source.Freeze();
+        BitmapSource square = ImageProcessingService.CreateSquare(source, new Rect(5, 5, 60, 35), 64, false, Colors.White);
+        if (square.PixelWidth != 64 || square.PixelHeight != 64 || !square.IsFrozen) throw new InvalidDataException("Square output failed.");
+        string directory = Path.Combine(Path.GetTempPath(), $"CutPicPipeline-{Guid.NewGuid():N}"); Directory.CreateDirectory(directory);
+        try
+        {
+            string path = Path.Combine(directory, "source.png"); ImageProcessingService.Save(source, path, "PNG", 92);
+            BitmapSource thumbnail = ImageProcessingService.LoadThumbnail(path, 32);
+            if (thumbnail.PixelWidth > 32 || thumbnail.PixelHeight > 32 || !thumbnail.IsFrozen) throw new InvalidDataException("Thumbnail pipeline failed.");
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    private static void RunConfigurationSmokeTest()
+    {
+        var shortcuts = ShortcutService.MergeWithDefaults(new Dictionary<string, string>());
+        if (shortcuts.Count != ShortcutService.Definitions.Count || shortcuts.Values.Select(ShortcutService.Normalize).Distinct(StringComparer.OrdinalIgnoreCase).Count() != shortcuts.Count)
+            throw new InvalidDataException("Shortcut defaults are incomplete or conflicting.");
+        string name = CutPic.MainWindow.BuildExportFileName("商品", true, 0, ".png", 0, string.Empty, "x", 5, 3);
+        if (name != "商品_part_005_x.png") throw new InvalidDataException($"Export naming failed: {name}");
     }
 
     private static void RunSmokeTest(string inputPath, string outputDirectory, bool objectMode)

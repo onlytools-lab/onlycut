@@ -100,6 +100,7 @@ public static class LocalizationService
         , ["图片已旋转，长图切片已按当前参数重新生成"]="Image rotated; long-image slices were regenerated using the current settings"
         , ["任务筛选"]="Task Filter", ["全部任务"]="All Tasks"
         , ["当前筛选条件下没有任务"]="No tasks match the current filter"
+        , ["配置来自更高版本，当前版本不会覆盖该文件"]="Settings were created by a newer version and will not be overwritten"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";

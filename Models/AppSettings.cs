@@ -2,6 +2,7 @@ namespace CutPic.Models;
 
 public sealed class AppSettings
 {
+    public int SchemaVersion { get; set; }
     public int OutputSizeIndex { get; set; } = 1;
     public int FormatIndex { get; set; }
     public double JpegQuality { get; set; } = 92;

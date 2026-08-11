@@ -42,3 +42,19 @@ dotnet run
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained false
 ```
+
+## 发布前验证
+
+运行统一构建与回归检查：
+
+```powershell
+.\scripts\verify-release.ps1
+```
+
+首次构建或依赖版本发生变化时，请先运行一次 `dotnet restore`。
+
+也可以直接运行应用内置测试，并指定报告位置：
+
+```powershell
+dotnet .\bin\Release\net10.0-windows\CutPic.dll --self-test .\test-results\self-test-report.txt
+```
