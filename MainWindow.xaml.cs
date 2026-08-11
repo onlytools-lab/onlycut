@@ -57,6 +57,7 @@ public partial class MainWindow : Window
     private int _autoSaveIntervalSeconds = 15;
     private string _fontFamilyName = "System";
     private string _languageCode = "zh-CN";
+    private Dictionary<string, string> _shortcuts = ShortcutService.CreateDefaults();
     private CancellationTokenSource? _exportCancellation;
     private bool _isExporting;
     private bool _retryFailedOnly;
@@ -84,6 +85,7 @@ public partial class MainWindow : Window
         _presets = PresetService.Load(PresetsPath);
         RefreshPresetList();
         LocalizationService.Apply(this);
+        UpdateShortcutToolTips();
         ApplyFontFamily();
         StatusText.LayoutUpdated += (_, _) =>
         {
@@ -120,7 +122,8 @@ public partial class MainWindow : Window
             AutoRestoreSession = _autoRestoreSession,
             AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
             FontFamilyName = _fontFamilyName,
-            LanguageCode = _languageCode
+            LanguageCode = _languageCode,
+            Shortcuts = new Dictionary<string, string>(_shortcuts, StringComparer.OrdinalIgnoreCase)
         };
         var dialog = new SettingsWindow(settings) { Owner = this };
         if (dialog.ShowDialog() != true) return;
@@ -138,12 +141,14 @@ public partial class MainWindow : Window
         _autoSaveIntervalSeconds = settings.AutoSaveIntervalSeconds;
         _fontFamilyName = settings.FontFamilyName;
         _languageCode = settings.LanguageCode;
+        _shortcuts = ShortcutService.MergeWithDefaults(settings.Shortcuts);
         LocalizationService.SetLanguage(_languageCode);
         _presets = PresetService.Load(PresetsPath);
         RefreshPresetList();
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         ApplyFontFamily();
         LocalizationService.Apply(this);
+        UpdateShortcutToolTips();
         TaskList.Items.Refresh();
         UpdateNamingExample();
         SaveSettings();
@@ -1350,9 +1355,57 @@ public partial class MainWindow : Window
             _isPickingBackgroundColor = false; Overlay.Cursor = Cursors.Arrow;
             StatusText.Text = "已取消背景取色"; e.Handled = true;
         }
-        else if (e.Key == Key.Delete) { DeleteSelected(); e.Handled = true; }
-        else if (e.Key == Key.Z && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { Undo(); e.Handled = true; }
-        else if (e.Key == Key.Y && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { Redo(); e.Handled = true; }
+        else if (TryExecuteShortcut(e)) e.Handled = true;
+    }
+
+    private bool TryExecuteShortcut(KeyEventArgs e)
+    {
+        bool textInput = Keyboard.FocusedElement is TextBox or PasswordBox ||
+                         Keyboard.FocusedElement is ComboBox { IsEditable: true };
+        foreach (ShortcutDefinition definition in ShortcutService.Definitions)
+        {
+            if (!_shortcuts.TryGetValue(definition.Id, out string? gesture) || !ShortcutService.Matches(e, gesture)) continue;
+            bool hasModifiers = Keyboard.Modifiers != ModifierKeys.None;
+            if (textInput && (!hasModifiers || definition.Id is "Undo" or "Redo")) return false;
+            switch (definition.Id)
+            {
+                case "OpenImages": Open_Click(this, new RoutedEventArgs()); break;
+                case "ImportFolder": ImportFolder_Click(this, new RoutedEventArgs()); break;
+                case "SaveProject": SaveProject_Click(this, new RoutedEventArgs()); break;
+                case "AutoDetect": DetectRegions(); break;
+                case "AddRegion": AddRegion_Click(this, new RoutedEventArgs()); break;
+                case "DeleteRegion": DeleteSelected(); break;
+                case "Undo": Undo(); break;
+                case "Redo": Redo(); break;
+                case "ConfirmTask": ConfirmTask_Click(this, new RoutedEventArgs()); break;
+                case "NextIssue": NextIssue_Click(this, new RoutedEventArgs()); break;
+                case "ZoomIn": SetZoom(_zoom * 1.2); break;
+                case "ZoomOut": SetZoom(_zoom / 1.2); break;
+                case "ZoomReset": SetZoom(1); break;
+                case "ExportAll": Export_Click(this, new RoutedEventArgs()); break;
+                case "Settings": Settings_Click(this, new RoutedEventArgs()); break;
+                default: return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private void UpdateShortcutToolTips()
+    {
+        SetTip(OpenImagesButton, "添加图片", "OpenImages");
+        SetTip(ImportFolderButton, "导入整个文件夹", "ImportFolder");
+        SetTip(SaveProjectButton, "保存 CutPic 项目", "SaveProject");
+        SetTip(DetectButton, "按当前参数重新识别", "AutoDetect");
+        SetTip(AddRegionButton, "添加选框", "AddRegion");
+        SetTip(DeleteRegionButton, "删除选框", "DeleteRegion");
+        SetTip(UndoButton, "撤销", "Undo"); SetTip(RedoButton, "重做", "Redo");
+        SetTip(ConfirmTaskButton, "标记当前任务已确认", "ConfirmTask");
+        SetTip(SettingsButton, "应用设置", "Settings"); SetTip(ExportAllButton, "导出全部", "ExportAll");
+        SetTip(ZoomOutButton, "缩小", "ZoomOut"); SetTip(ZoomInButton, "放大", "ZoomIn");
+        SetTip(ZoomTextButton, "恢复 100%", "ZoomReset");
+        void SetTip(FrameworkElement element, string text, string id) =>
+            element.ToolTip = $"{LocalizationService.Translate(text)}  ({_shortcuts[id]})";
     }
 
     private EditHistory? CurrentHistory()
@@ -1489,6 +1542,7 @@ public partial class MainWindow : Window
             _fontFamilyName = settings.FontFamilyName;
             _languageCode = settings.LanguageCode;
             _defaultPresetId = settings.DefaultPresetId;
+            _shortcuts = ShortcutService.MergeWithDefaults(settings.Shortcuts);
             OnlyConfirmedTasksBox.IsChecked = settings.OnlyConfirmedTasks;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
@@ -1538,6 +1592,7 @@ public partial class MainWindow : Window
                 LanguageCode = _languageCode,
                 DefaultPresetId = _defaultPresetId,
                 OnlyConfirmedTasks = OnlyConfirmedTasksBox.IsChecked == true,
+                Shortcuts = new Dictionary<string, string>(_shortcuts, StringComparer.OrdinalIgnoreCase),
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,

@@ -73,7 +73,13 @@ public static class LocalizationService
         , ["仅导出已确认任务"]="Export Confirmed Tasks Only", ["下一异常"]="Next Issue", ["确认无警告"]="Confirm Safe Tasks", ["重试失败任务"]="Retry Failed Tasks",
         ["切片"]="Slices", ["已定位异常任务"]="Issue task selected", ["没有需要处理的异常任务"]="No issue tasks to process",
         ["个无警告任务"]=" safe task(s)", ["没有可重试的失败任务。"]="There are no failed tasks to retry.",
-        ["没有符合当前条件的可导出任务。"]="No tasks match the current export filter."
+        ["没有符合当前条件的可导出任务。"]="No tasks match the current export filter.",
+        ["快捷键"]="Keyboard Shortcuts", ["恢复默认快捷键"]="Restore Default Shortcuts",
+        ["点击快捷键输入框，然后按下新的按键组合。单键快捷键在文本输入时不会触发。"]="Click a shortcut field, then press a new key combination. Single-key shortcuts are disabled while typing text.",
+        ["点击后按下新的快捷键"]="Click and press a new shortcut", ["快捷键冲突"]="Shortcut Conflict",
+        ["已分配给多个操作"]="is assigned to multiple actions", ["恢复 100%"]="Reset to 100%",
+        ["确认当前任务"]="Confirm Current Task", ["打开设置"]="Open Settings", ["新增选框"]="Add Region",
+        ["导入文件夹"]="Import Folder", ["保存项目"]="Save Project", ["下一异常"]="Next Issue"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";

@@ -63,6 +63,19 @@
           </StackPanel>
         </materialDesign:Card>
 
+        <DockPanel Margin="4,18,0,10" LastChildFill="False">
+          <TextBlock Text="快捷键" Style="{StaticResource PanelHeader}" VerticalAlignment="Center"/>
+          <Button DockPanel.Dock="Right" Content="恢复默认快捷键" Click="ResetShortcuts_Click"
+                  Style="{StaticResource MaterialDesignFlatButton}" Padding="10,4"/>
+        </DockPanel>
+        <materialDesign:Card Padding="18,10" Background="{StaticResource AppSurfaceBrush}" UniformCornerRadius="10">
+          <StackPanel>
+            <TextBlock Text="点击快捷键输入框，然后按下新的按键组合。单键快捷键在文本输入时不会触发。"
+                       FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,2,0,10"/>
+            <StackPanel x:Name="ShortcutListPanel"/>
+          </StackPanel>
+        </materialDesign:Card>
+
         <TextBlock Text="外观" Style="{StaticResource PanelHeader}" Margin="4,18,0,10"/>
         <materialDesign:Card Padding="18" Background="{StaticResource AppSurfaceBrush}" UniformCornerRadius="10">
           <StackPanel>

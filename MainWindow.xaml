@@ -27,33 +27,33 @@
         </StackPanel>
 
         <StackPanel x:Name="AppBarActions" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-          <Button Style="{StaticResource TopActionButton}" Click="Open_Click" ToolTip="添加图片">
+          <Button x:Name="OpenImagesButton" Style="{StaticResource TopActionButton}" Click="Open_Click" ToolTip="添加图片">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="FolderOpen"/><TextBlock Text="添加图片" Margin="7,0,0,0"/></StackPanel>
           </Button>
-          <Button Style="{StaticResource TopActionButton}" Click="ImportFolder_Click" ToolTip="导入整个文件夹">
+          <Button x:Name="ImportFolderButton" Style="{StaticResource TopActionButton}" Click="ImportFolder_Click" ToolTip="导入整个文件夹">
             <materialDesign:PackIcon Kind="FolderMultipleImage"/>
           </Button>
           <Button Style="{StaticResource TopActionButton}" Click="OpenProject_Click" ToolTip="打开 CutPic 项目">
             <materialDesign:PackIcon Kind="FolderCogOutline"/>
           </Button>
-          <Button Style="{StaticResource TopActionButton}" Click="SaveProject_Click" ToolTip="保存 CutPic 项目">
+          <Button x:Name="SaveProjectButton" Style="{StaticResource TopActionButton}" Click="SaveProject_Click" ToolTip="保存 CutPic 项目">
             <materialDesign:PackIcon Kind="ContentSaveOutline"/>
           </Button>
           <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
-          <Button Style="{StaticResource TopActionButton}" Click="Detect_Click" ToolTip="按当前参数重新识别">
+          <Button x:Name="DetectButton" Style="{StaticResource TopActionButton}" Click="Detect_Click" ToolTip="按当前参数重新识别">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="AutoFix"/><TextBlock Text="自动识别" Margin="7,0,0,0"/></StackPanel>
           </Button>
           <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
-          <Button Style="{StaticResource TopActionButton}" Click="Undo_Click" ToolTip="撤销 Ctrl+Z"><materialDesign:PackIcon Kind="Undo"/></Button>
-          <Button Style="{StaticResource TopActionButton}" Click="Redo_Click" ToolTip="重做 Ctrl+Y"><materialDesign:PackIcon Kind="Redo"/></Button>
-          <Button Style="{StaticResource TopActionButton}" Click="ConfirmTask_Click" ToolTip="标记当前任务已确认">
+          <Button x:Name="UndoButton" Style="{StaticResource TopActionButton}" Click="Undo_Click" ToolTip="撤销 Ctrl+Z"><materialDesign:PackIcon Kind="Undo"/></Button>
+          <Button x:Name="RedoButton" Style="{StaticResource TopActionButton}" Click="Redo_Click" ToolTip="重做 Ctrl+Y"><materialDesign:PackIcon Kind="Redo"/></Button>
+          <Button x:Name="ConfirmTaskButton" Style="{StaticResource TopActionButton}" Click="ConfirmTask_Click" ToolTip="标记当前任务已确认">
             <materialDesign:PackIcon Kind="CheckCircleOutline"/>
           </Button>
           <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
-          <Button Style="{StaticResource TopActionButton}" Click="Settings_Click" ToolTip="应用设置">
+          <Button x:Name="SettingsButton" Style="{StaticResource TopActionButton}" Click="Settings_Click" ToolTip="应用设置">
             <materialDesign:PackIcon Kind="CogOutline"/>
           </Button>
-          <Button Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="10,0,0,0" Padding="16,0"
+          <Button x:Name="ExportAllButton" Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="10,0,0,0" Padding="16,0"
                   MinWidth="128" Height="44" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                   Background="{DynamicResource MaterialDesign.Brush.Secondary}" Foreground="#19111A">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -128,10 +128,10 @@
             <materialDesign:Card HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16,16,0,0"
                                  Background="{StaticResource AppSurfaceHighBrush}" UniformCornerRadius="20" materialDesign:ElevationAssist.Elevation="Dp4">
               <StackPanel Orientation="Horizontal" Margin="3">
-                <Button Click="AddRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="添加选框" Width="34" Height="34" Padding="7">
+                <Button x:Name="AddRegionButton" Click="AddRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="添加选框" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="SelectionDrag" Width="17" Height="17"/>
                 </Button>
-                <Button Click="DeleteRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="删除选框" Width="34" Height="34" Padding="7">
+                <Button x:Name="DeleteRegionButton" Click="DeleteRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="删除选框" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="DeleteOutline" Width="17" Height="17"/>
                 </Button>
               </StackPanel>
@@ -140,12 +140,12 @@
             <materialDesign:Card HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,16,0"
                                  Background="{StaticResource AppSurfaceHighBrush}" UniformCornerRadius="20" materialDesign:ElevationAssist.Elevation="Dp4">
               <StackPanel Orientation="Horizontal" Margin="3">
-                <Button Click="ZoomOut_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="缩小" Width="34" Height="34" Padding="8">
+                <Button x:Name="ZoomOutButton" Click="ZoomOut_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="缩小" Width="34" Height="34" Padding="8">
                   <materialDesign:PackIcon Kind="Minus" Width="15" Height="15"/>
                 </Button>
                 <Button x:Name="ZoomTextButton" Content="100%" Click="ZoomReset_Click" Style="{StaticResource MaterialDesignFlatButton}"
                         MinWidth="54" Height="34" Padding="5,0" FontSize="12"/>
-                <Button Click="ZoomIn_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="放大" Width="34" Height="34" Padding="8">
+                <Button x:Name="ZoomInButton" Click="ZoomIn_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="放大" Width="34" Height="34" Padding="8">
                   <materialDesign:PackIcon Kind="Plus" Width="15" Height="15"/>
                 </Button>
               </StackPanel>

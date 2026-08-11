@@ -44,4 +44,5 @@ public sealed class AppSettings
     public string LanguageCode { get; set; } = "zh-CN";
     public string DefaultPresetId { get; set; } = "builtin-card";
     public bool OnlyConfirmedTasks { get; set; }
+    public Dictionary<string, string> Shortcuts { get; set; } = Services.ShortcutService.CreateDefaults();
 }
