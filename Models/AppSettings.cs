@@ -42,4 +42,5 @@ public sealed class AppSettings
     public int AutoSaveIntervalSeconds { get; set; } = 15;
     public string FontFamilyName { get; set; } = "System";
     public string LanguageCode { get; set; } = "zh-CN";
+    public string DefaultPresetId { get; set; } = "builtin-card";
 }

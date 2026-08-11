@@ -37,6 +37,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, EditHistory> _histories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _longModeStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _manualBackgroundColors = new(StringComparer.OrdinalIgnoreCase);
+    private List<ProcessingPreset> _presets = [];
+    private string _defaultPresetId = "builtin-card";
     private BitmapSource? _bitmap;
     private string? _sourcePath;
     private CropRegion? _selected;
@@ -75,6 +77,8 @@ public partial class MainWindow : Window
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
         LocalizationService.SetLanguage(_languageCode);
+        _presets = PresetService.Load(PresetsPath);
+        RefreshPresetList();
         LocalizationService.Apply(this);
         ApplyFontFamily();
         StatusText.LayoutUpdated += (_, _) =>
@@ -131,6 +135,8 @@ public partial class MainWindow : Window
         _fontFamilyName = settings.FontFamilyName;
         _languageCode = settings.LanguageCode;
         LocalizationService.SetLanguage(_languageCode);
+        _presets = PresetService.Load(PresetsPath);
+        RefreshPresetList();
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         ApplyFontFamily();
         LocalizationService.Apply(this);
@@ -154,8 +160,93 @@ public partial class MainWindow : Window
         StatusText.Text = files.Length == 0 ? "文件夹中没有找到支持的图片" : $"已从文件夹导入 {files.Length} 张图片";
     }
 
+    private void RefreshPresetList(string? selectId = null)
+    {
+        if (PresetBox is null) return;
+        string id = selectId ?? (PresetBox.SelectedItem as ProcessingPreset)?.Id ?? _defaultPresetId;
+        PresetBox.ItemsSource = null; PresetBox.ItemsSource = _presets;
+        PresetBox.SelectedItem = _presets.FirstOrDefault(p => p.Id == id) ?? _presets.FirstOrDefault();
+        if (_presets.All(p => p.Id != _defaultPresetId)) _defaultPresetId = "builtin-card";
+    }
+
+    private ProcessingPreset CaptureCurrentPreset(string name, string? id = null) => new()
+    {
+        Id = id ?? Guid.NewGuid().ToString("N"), Name = name, WorkModeIndex = WorkModeBox.SelectedIndex,
+        DetectionModeIndex = DetectionModeBox.SelectedIndex, DetectionSensitivity = SensitivitySlider.Value,
+        GroupingDistance = GroupingSlider.Value, MinimumAreaPercent = MinimumAreaBox.Text,
+        ObjectPadding = ObjectPaddingBox.Text, TransparentBackground = TransparentBackgroundBox.IsChecked == true,
+        TransparencyBackgroundSourceIndex = TransparencyBackgroundSourceBox.SelectedIndex,
+        TransparencyStrengthIndex = TransparencyStrengthBox.SelectedIndex,
+        TransparencyTolerance = TransparencyToleranceSlider.Value, TransparencyFeather = TransparencyFeatherSlider.Value,
+        OutputSizeIndex = SizeBox.SelectedIndex, FormatIndex = FormatBox.SelectedIndex,
+        LongSplitModeIndex = LongSplitModeBox.SelectedIndex, LongSliceCount = LongCountBox.Text,
+        LongFixedHeight = LongFixedHeightBox.Text, LongCustomHeights = LongCustomHeightsBox.Text,
+        SmartTargetHeight = SmartTargetHeightBox.Text, SmartSearchRange = SmartSearchRangeBox.Text,
+        NamingModeIndex = NamingModeBox.SelectedIndex, NamingPrefix = NamingPrefixBox.Text,
+        NamingSuffix = NamingSuffixBox.Text, NamingStartNumber = NamingStartNumberBox.Text,
+        NamingDigitsIndex = NamingDigitsBox.SelectedIndex
+    };
+
+    private void ApplyPresetParameters(ProcessingPreset preset, bool processCurrent)
+    {
+        _suppressWorkModeChange = true; WorkModeBox.SelectedIndex = Math.Clamp(preset.WorkModeIndex, 0, 1); _suppressWorkModeChange = false;
+        if (_sourcePath is not null) _longModeStates[_sourcePath] = WorkModeBox.SelectedIndex == 1;
+        DetectionModeBox.SelectedIndex = Math.Clamp(preset.DetectionModeIndex, 0, 2);
+        SensitivitySlider.Value = preset.DetectionSensitivity; GroupingSlider.Value = preset.GroupingDistance;
+        MinimumAreaBox.Text = preset.MinimumAreaPercent; ObjectPaddingBox.Text = preset.ObjectPadding;
+        TransparentBackgroundBox.IsChecked = preset.TransparentBackground;
+        TransparencyBackgroundSourceBox.SelectedIndex = Math.Clamp(preset.TransparencyBackgroundSourceIndex, 0, 2);
+        TransparencyStrengthBox.SelectedIndex = Math.Clamp(preset.TransparencyStrengthIndex, 0, 2);
+        TransparencyToleranceSlider.Value = preset.TransparencyTolerance; TransparencyFeatherSlider.Value = preset.TransparencyFeather;
+        SizeBox.SelectedIndex = Math.Clamp(preset.OutputSizeIndex, 0, SizeBox.Items.Count - 1);
+        FormatBox.SelectedIndex = Math.Clamp(preset.FormatIndex, 0, FormatBox.Items.Count - 1);
+        LongSplitModeBox.SelectedIndex = Math.Clamp(preset.LongSplitModeIndex, 0, 3);
+        LongCountBox.Text = preset.LongSliceCount; LongFixedHeightBox.Text = preset.LongFixedHeight;
+        LongCustomHeightsBox.Text = preset.LongCustomHeights; SmartTargetHeightBox.Text = preset.SmartTargetHeight;
+        SmartSearchRangeBox.Text = preset.SmartSearchRange; NamingModeBox.SelectedIndex = Math.Clamp(preset.NamingModeIndex, 0, 1);
+        NamingPrefixBox.Text = preset.NamingPrefix; NamingSuffixBox.Text = preset.NamingSuffix;
+        NamingStartNumberBox.Text = preset.NamingStartNumber; NamingDigitsBox.SelectedIndex = Math.Clamp(preset.NamingDigitsIndex, 0, 2);
+        UpdateWorkModeUi(); TransparentBackgroundBox_Click(this, null!); UpdateNamingExample();
+        if (processCurrent && _bitmap is not null) DetectRegions();
+    }
+
+    private void ApplyPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (PresetBox.SelectedItem is not ProcessingPreset preset) return;
+        ApplyPresetParameters(preset, true); StatusText.Text = $"已应用预设：{preset.Name}";
+    }
+
+    private void SavePreset_Click(object sender, RoutedEventArgs e)
+    {
+        string name = PresetNameBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name)) { ShowMessage("请输入自定义预设名称。", "无法保存预设"); return; }
+        var existing = _presets.FirstOrDefault(p => !p.IsBuiltIn && string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase));
+        if (existing is not null && ShowMessage("已存在同名预设，是否覆盖？", "覆盖预设", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        var preset = CaptureCurrentPreset(name, existing?.Id);
+        if (existing is not null) _presets[_presets.IndexOf(existing)] = preset; else _presets.Add(preset);
+        PresetService.Save(PresetsPath, _presets); RefreshPresetList(preset.Id); PresetNameBox.Clear();
+        StatusText.Text = $"预设已保存：{name}";
+    }
+
+    private void DeletePreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (PresetBox.SelectedItem is not ProcessingPreset preset) return;
+        if (preset.IsBuiltIn) { ShowMessage("内置预设不能删除。", "无法删除预设"); return; }
+        if (ShowMessage($"确定删除预设“{preset.Name}”吗？", "删除预设", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        _presets.Remove(preset); if (_defaultPresetId == preset.Id) _defaultPresetId = "builtin-card";
+        PresetService.Save(PresetsPath, _presets); RefreshPresetList(); SaveSettings();
+    }
+
+    private void SetDefaultPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (PresetBox.SelectedItem is not ProcessingPreset preset) return;
+        _defaultPresetId = preset.Id; SaveSettings(); StatusText.Text = $"默认预设已设为：{preset.Name}";
+    }
+
     private void AddFiles(IEnumerable<string> paths)
     {
+        if (_tasks.Count == 0 && _presets.FirstOrDefault(p => p.Id == _defaultPresetId) is { } defaultPreset)
+            ApplyPresetParameters(defaultPreset, false);
         ImageTask? firstAdded = null;
         foreach (string path in paths.Where(File.Exists))
         {
@@ -193,6 +284,7 @@ public partial class MainWindow : Window
     private static string LocalDataDirectory => Environment.GetEnvironmentVariable("CUTPIC_DATA_DIR")
         ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CutPic");
     private static string RecoveryProjectPath => System.IO.Path.Combine(LocalDataDirectory, "last-session.cutpic");
+    private static string PresetsPath => System.IO.Path.Combine(LocalDataDirectory, "presets.json");
 
     private ProjectDocument BuildProjectDocument() => new()
     {
@@ -1265,6 +1357,7 @@ public partial class MainWindow : Window
             _autoSaveIntervalSeconds = Math.Clamp(settings.AutoSaveIntervalSeconds, 5, 300);
             _fontFamilyName = settings.FontFamilyName;
             _languageCode = settings.LanguageCode;
+            _defaultPresetId = settings.DefaultPresetId;
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1311,6 +1404,7 @@ public partial class MainWindow : Window
                 AutoSaveIntervalSeconds = _autoSaveIntervalSeconds,
                 FontFamilyName = _fontFamilyName,
                 LanguageCode = _languageCode,
+                DefaultPresetId = _defaultPresetId,
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,
                 LongCustomHeights = LongCustomHeightsBox.Text,

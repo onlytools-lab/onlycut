@@ -129,6 +129,17 @@
       <Border Grid.Column="2" Background="{StaticResource AppSurfaceBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1,0,0,0">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Margin="18">
+            <TextBlock Text="处理预设" Style="{StaticResource PanelHeader}"/>
+            <ComboBox x:Name="PresetBox" materialDesign:HintAssist.Hint="选择预设"
+                      Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,10"/>
+            <TextBox x:Name="PresetNameBox" materialDesign:HintAssist.Hint="自定义预设名称"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}" Margin="0,0,0,8"/>
+            <UniformGrid Columns="2" Margin="0,0,0,14">
+              <Button Content="应用预设" Click="ApplyPreset_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,4,6"/>
+              <Button Content="保存当前参数" Click="SavePreset_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="4,0,0,6"/>
+              <Button Content="删除自定义预设" Click="DeletePreset_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,0,4,0"/>
+              <Button Content="设为默认" Click="SetDefaultPreset_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="4,0,0,0"/>
+            </UniformGrid>
             <TextBlock Text="工作模式" Style="{StaticResource PanelHeader}"/>
             <ComboBox x:Name="WorkModeBox" SelectedIndex="0" materialDesign:HintAssist.Hint="当前工作流"
                       Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,0,16"

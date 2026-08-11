@@ -26,6 +26,21 @@ public partial class App : Application
             var window = new SettingsWindow(new CutPic.Models.AppSettings());
             window.Show(); window.Close(); Shutdown(); return;
         }
+        if (e.Args.Length >= 2 && e.Args[0] == "--smoke-presets")
+        {
+            string path = e.Args[1];
+            var presets = PresetService.Load(path);
+            presets.Add(new CutPic.Models.ProcessingPreset { Name = "Smoke Custom", DetectionModeIndex = 2 });
+            PresetService.Save(path, presets);
+            var loaded = PresetService.Load(path);
+            if (loaded.Count != 5 || loaded.Count(p => p.IsBuiltIn) != 4 || loaded.All(p => p.Name != "Smoke Custom"))
+                throw new InvalidDataException("Preset smoke test failed.");
+            Shutdown(); return;
+        }
+        if (e.Args.Length >= 1 && e.Args[0] == "--smoke-main")
+        {
+            var window = new MainWindow(); window.Show(); window.Close(); Shutdown(); return;
+        }
         if (e.Args.Length >= 3 && (e.Args[0] == "--smoke" || e.Args[0] == "--smoke-objects"))
         {
             RunSmokeTest(e.Args[1], e.Args[2], e.Args[0] == "--smoke-objects");

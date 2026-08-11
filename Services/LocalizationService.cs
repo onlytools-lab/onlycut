@@ -56,6 +56,13 @@ public static class LocalizationService
         , ["取消导出"]="Cancel Export", ["正在导出"]="Exporting", ["正在取消导出，请等待当前切片处理完成……"]="Cancelling export. Waiting for the current slice to finish…",
         ["导出已取消，已完成的文件予以保留"]="Export cancelled. Completed files were kept.", ["导出已取消"]="Export Cancelled", ["导出结果汇总"]="Export Summary",
         ["成功"]="Succeeded", ["跳过"]="Skipped", ["失败"]="Failed", ["失败明细"]="Failure Details", ["批量导出完成"]="Batch export complete"
+        , ["处理预设"]="Processing Presets", ["选择预设"]="Select Preset", ["自定义预设名称"]="Custom Preset Name", ["应用预设"]="Apply Preset",
+        ["保存当前参数"]="Save Current Settings", ["删除自定义预设"]="Delete Custom Preset", ["设为默认"]="Set as Default",
+        ["商品卡片"]="Product Cards", ["无边界图标"]="Borderless Icons", ["表情包"]="Emoji Pack",
+        ["已应用预设"]="Preset applied", ["请输入自定义预设名称。"]="Enter a name for the custom preset.", ["无法保存预设"]="Cannot Save Preset",
+        ["已存在同名预设，是否覆盖？"]="A preset with this name already exists. Overwrite it?", ["覆盖预设"]="Overwrite Preset", ["预设已保存"]="Preset saved",
+        ["内置预设不能删除。"]="Built-in presets cannot be deleted.", ["无法删除预设"]="Cannot Delete Preset", ["确定删除预设"]="Delete preset", ["删除预设"]="Delete Preset",
+        ["默认预设已设为"]="Default preset set to"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";
