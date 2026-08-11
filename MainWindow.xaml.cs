@@ -92,6 +92,11 @@ public partial class MainWindow : Window
         public bool Cancelled { get; set; }
         public List<string> Errors { get; } = [];
     }
+    private sealed class ExportPreflightResult
+    {
+        public List<string> Errors { get; } = [];
+        public List<string> Warnings { get; } = [];
+    }
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
@@ -896,6 +901,17 @@ public partial class MainWindow : Window
             ? Math.Clamp(parsedDigits, 1, 8) : 2;
         bool createSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true;
         bool openFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true;
+        ExportPreflightResult preflight = RunExportPreflight(exportDirectory, exportTasks, extension, outputSize,
+            namingMode, namingPrefix, namingSuffix, namingStart, namingDigits, createSourceSubfolder, conflictPolicy);
+        if (preflight.Errors.Count > 0)
+        {
+            ShowMessage(string.Join("\n", preflight.Errors), "导出预检未通过", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        if (preflight.Warnings.Count > 0 && ShowMessage(
+                string.Join("\n", preflight.Warnings) + "\n\n是否继续生成导出总览？", "导出预检提醒",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
         HashSet<string> selectedPreviewKeys;
         try
         {
@@ -1076,6 +1092,71 @@ public partial class MainWindow : Window
             WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
             ExportProgressPanel.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private ExportPreflightResult RunExportPreflight(string exportDirectory, IReadOnlyList<ImageTask> tasks,
+        string extension, int outputSize, int namingMode, string namingPrefix, string namingSuffix,
+        int namingStart, int namingDigits, bool createSourceSubfolder, int conflictPolicy)
+    {
+        var result = new ExportPreflightResult();
+        try
+        {
+            Directory.CreateDirectory(exportDirectory);
+            string probe = System.IO.Path.Combine(exportDirectory, $".cutpic-write-test-{Guid.NewGuid():N}.tmp");
+            try { using var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None); stream.WriteByte(0); }
+            finally { if (File.Exists(probe)) File.Delete(probe); }
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"输出文件夹不可写：{ex.Message}");
+            return result;
+        }
+
+        long estimatedBytes = 0;
+        int existingConflicts = 0;
+        int duplicateNames = 0;
+        var planned = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (ImageTask task in tasks)
+        {
+            bool isLong = _longModeStates.TryGetValue(task.Path, out bool taskMode) && taskMode;
+            int count = _regionStates.TryGetValue(task.Path, out var regions) && regions.Count > 0
+                ? regions.Count : Math.Max(1, task.SliceCount);
+            estimatedBytes += isLong ? Math.Max(1, new FileInfo(task.Path).Length) : (long)outputSize * outputSize * 4 * count;
+            string baseName = System.IO.Path.GetFileNameWithoutExtension(task.Path);
+            string taskDirectory = createSourceSubfolder
+                ? System.IO.Path.Combine(exportDirectory, SanitizeFileName(baseName, "图片")) : exportDirectory;
+            for (int i = 0; i < count; i++)
+            {
+                string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(taskDirectory,
+                    BuildExportFileName(baseName, isLong, i, extension, namingMode, namingPrefix, namingSuffix, namingStart, namingDigits)));
+                if (!planned.Add(path)) duplicateNames++;
+                if (File.Exists(path)) existingConflicts++;
+                if (string.Equals(path, System.IO.Path.GetFullPath(task.Path), StringComparison.OrdinalIgnoreCase))
+                    result.Errors.Add($"导出路径会覆盖源图片：{task.Name}");
+            }
+        }
+
+        try
+        {
+            string root = System.IO.Path.GetPathRoot(System.IO.Path.GetFullPath(exportDirectory))!;
+            long available = new DriveInfo(root).AvailableFreeSpace;
+            if (available < 256L * 1024 * 1024 || estimatedBytes > available)
+                result.Warnings.Add($"磁盘可用空间可能不足（可用 {FormatBytes(available)}，预计最多需要 {FormatBytes(estimatedBytes)}）。");
+        }
+        catch { }
+        if (duplicateNames > 0)
+            result.Warnings.Add($"当前命名规则会产生 {duplicateNames} 个重复目标文件名。请在导出总览中确认。");
+        if (existingConflicts > 0)
+            result.Warnings.Add($"检测到 {existingConflicts} 个已有同名文件，将按“{LocalizationService.Translate(conflictPolicy switch { 1 => "覆盖已有文件", 2 => "跳过已有文件", _ => "自动追加序号" })}”处理。");
+        return result;
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB", "TB"];
+        double value = Math.Max(0, bytes); int unit = 0;
+        while (value >= 1024 && unit < units.Length - 1) { value /= 1024; unit++; }
+        return $"{value:0.#} {units[unit]}";
     }
 
     private void CancelExport_Click(object sender, RoutedEventArgs e)
