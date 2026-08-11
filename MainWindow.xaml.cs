@@ -104,6 +104,7 @@ public partial class MainWindow : Window
         TaskList.ItemsSource = _taskView;
         RefreshTaskList();
         PreviewKeyDown += MainWindow_PreviewKeyDown;
+        SizeChanged += (_, _) => UpdateResponsiveToolbar();
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
         LocalizationService.SetLanguage(_languageCode);
@@ -112,6 +113,7 @@ public partial class MainWindow : Window
         LocalizationService.Apply(this);
         UpdateShortcutToolTips();
         ApplyFontFamily();
+        UpdateResponsiveToolbar();
         StatusText.LayoutUpdated += (_, _) =>
         {
             string translated = LocalizationService.Translate(StatusText.Text);
@@ -129,6 +131,24 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog { Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp|所有文件|*.*", Multiselect = true };
         if (dialog.ShowDialog() == true) AddFiles(dialog.FileNames);
+    }
+
+    private void MoreActions_Click(object sender, RoutedEventArgs e)
+    {
+        MoreActionsMenu.PlacementTarget = MoreActionsButton;
+        MoreActionsMenu.IsOpen = true;
+    }
+
+    private void UpdateResponsiveToolbar()
+    {
+        double width = ActualWidth > 0 ? ActualWidth : Width;
+        bool compact = width < 1360;
+        ImportFolderButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        OpenProjectButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SaveProjectButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SettingsButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        ProjectActionsSeparator.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        MoreActionsButton.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)

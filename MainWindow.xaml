@@ -33,13 +33,13 @@
           <Button x:Name="ImportFolderButton" Style="{StaticResource TopActionButton}" Click="ImportFolder_Click" ToolTip="导入整个文件夹">
             <materialDesign:PackIcon Kind="FolderMultipleImage"/>
           </Button>
-          <Button Style="{StaticResource TopActionButton}" Click="OpenProject_Click" ToolTip="打开 CutPic 项目">
+          <Button x:Name="OpenProjectButton" Style="{StaticResource TopActionButton}" Click="OpenProject_Click" ToolTip="打开 CutPic 项目">
             <materialDesign:PackIcon Kind="FolderCogOutline"/>
           </Button>
           <Button x:Name="SaveProjectButton" Style="{StaticResource TopActionButton}" Click="SaveProject_Click" ToolTip="保存 CutPic 项目">
             <materialDesign:PackIcon Kind="ContentSaveOutline"/>
           </Button>
-          <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
+          <Border x:Name="ProjectActionsSeparator" Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
           <Button x:Name="DetectButton" Style="{StaticResource TopActionButton}" Click="Detect_Click" ToolTip="按当前参数重新识别">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="AutoFix"/><TextBlock Text="自动识别" Margin="7,0,0,0"/></StackPanel>
           </Button>
@@ -52,6 +52,20 @@
           <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
           <Button x:Name="SettingsButton" Style="{StaticResource TopActionButton}" Click="Settings_Click" ToolTip="应用设置">
             <materialDesign:PackIcon Kind="CogOutline"/>
+          </Button>
+          <Button x:Name="MoreActionsButton" Style="{StaticResource TopActionButton}" Click="MoreActions_Click"
+                  ToolTip="更多操作" Visibility="Collapsed">
+            <materialDesign:PackIcon Kind="DotsVertical"/>
+            <Button.ContextMenu>
+              <ContextMenu x:Name="MoreActionsMenu" Placement="Bottom">
+                <MenuItem Header="导入文件夹" Click="ImportFolder_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="FolderMultipleImage"/></MenuItem.Icon></MenuItem>
+                <Separator/>
+                <MenuItem Header="打开项目" Click="OpenProject_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="FolderCogOutline"/></MenuItem.Icon></MenuItem>
+                <MenuItem Header="保存项目" Click="SaveProject_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="ContentSaveOutline"/></MenuItem.Icon></MenuItem>
+                <Separator/>
+                <MenuItem Header="应用设置" Click="Settings_Click"><MenuItem.Icon><materialDesign:PackIcon Kind="CogOutline"/></MenuItem.Icon></MenuItem>
+              </ContextMenu>
+            </Button.ContextMenu>
           </Button>
           <Button x:Name="ExportAllButton" Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="10,0,0,0" Padding="16,0"
                   MinWidth="128" Height="44" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
