@@ -110,7 +110,12 @@
                           PreviewMouseWheel="ImageScrollViewer_PreviewMouseWheel">
               <Grid x:Name="ImageHost" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="28" RenderTransformOrigin="0,0">
                 <Grid.LayoutTransform><ScaleTransform x:Name="CanvasScale" ScaleX="1" ScaleY="1"/></Grid.LayoutTransform>
-                <Image x:Name="SourceImage" Stretch="None"/>
+                <!--
+                  The editing canvas uses bitmap pixels as its coordinate system.  Stretch=Fill is
+                  intentional here: WPF otherwise sizes the bitmap from its DPI metadata, so a
+                  72-DPI image is rendered larger than the pixel-sized canvas and gets clipped.
+                -->
+                <Image x:Name="SourceImage" Stretch="Fill"/>
                 <Canvas x:Name="Overlay" Background="Transparent" PreviewMouseLeftButtonDown="Overlay_PreviewMouseLeftButtonDown" MouseLeftButtonDown="Overlay_MouseLeftButtonDown"
                         MouseMove="Overlay_MouseMove" MouseLeftButtonUp="Overlay_MouseLeftButtonUp"/>
               </Grid>
