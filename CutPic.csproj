@@ -7,6 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>CutPic</AssemblyName>
     <RootNamespace>CutPic</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Company>CutPic</Company>
+    <Product>CutPic</Product>
+    <Description>Smart grid, asset, and long-image slicing tool</Description>
+    <ApplicationIcon>CutPic.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MaterialDesignThemes" Version="5.3.2" />

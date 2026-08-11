@@ -2,6 +2,7 @@
 bin/
 obj/
 publish/
+artifacts/
 .vs/
 *.user
 *.suo
@@ -25,6 +26,7 @@ long-mode-regression/
 phase1-regression/
 smart-split-regression/
 transparent-regression*/
+published-*-smoke/
 
 # OS files
 Thumbs.db
