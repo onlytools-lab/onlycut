@@ -28,6 +28,31 @@ public static class ImageProcessingService
         return ApplyExifOrientation(source, orientation);
     }
 
+    public static BitmapSource LoadThumbnail(string path, int maximumPixels = 64)
+    {
+        ushort orientation;
+        using (var metadataStream = File.OpenRead(path))
+        {
+            var decoder = BitmapDecoder.Create(metadataStream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+            orientation = ReadExifOrientation(decoder.Frames[0]);
+        }
+        using var stream = File.OpenRead(path);
+        var image = new BitmapImage();
+        image.BeginInit();
+        image.CacheOption = BitmapCacheOption.OnLoad;
+        image.DecodePixelWidth = Math.Max(16, maximumPixels);
+        image.DecodePixelHeight = Math.Max(16, maximumPixels);
+        image.StreamSource = stream;
+        image.EndInit(); image.Freeze();
+        BitmapSource source = image;
+        if (source.Format != PixelFormats.Bgra32)
+        {
+            var converted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+            converted.Freeze(); source = converted;
+        }
+        return ApplyExifOrientation(source, orientation);
+    }
+
     private static ushort ReadExifOrientation(BitmapFrame frame)
     {
         if (frame.Metadata is not BitmapMetadata metadata) return 1;

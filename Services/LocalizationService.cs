@@ -98,6 +98,8 @@ public static class LocalizationService
         , ["图片已向左旋转 90°"]="Image rotated left 90°", ["图片已向右旋转 90°"]="Image rotated right 90°"
         , ["图片已水平翻转"]="Image flipped horizontally", ["图片已垂直翻转"]="Image flipped vertically"
         , ["图片已旋转，长图切片已按当前参数重新生成"]="Image rotated; long-image slices were regenerated using the current settings"
+        , ["任务筛选"]="Task Filter", ["全部任务"]="All Tasks"
+        , ["当前筛选条件下没有任务"]="No tasks match the current filter"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";

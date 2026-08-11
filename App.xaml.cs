@@ -50,6 +50,13 @@ public partial class App : Application
         {
             RunExifSmokeTest(); RunManualTransformSmokeTest(); RunAtomicFileSmokeTest(); Shutdown(); return;
         }
+        if (e.Args.Length >= 2 && e.Args[0] == "--smoke-thumbnail")
+        {
+            BitmapSource thumbnail = ImageProcessingService.LoadThumbnail(e.Args[1], 64);
+            if (thumbnail.PixelWidth > 64 || thumbnail.PixelHeight > 64 || !thumbnail.IsFrozen)
+                throw new InvalidDataException("Thumbnail size or thread-safety validation failed.");
+            Shutdown(); return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-export-preview")
         {
             LocalizationService.SetLanguage(e.Args.Length >= 2 ? e.Args[1] : "zh-CN");

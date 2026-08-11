@@ -11,20 +11,32 @@ using CutPic.Services;
 using System.IO;
 using System.Windows.Threading;
 using System.Diagnostics;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Data;
 
 namespace CutPic;
 
 public partial class MainWindow : Window
 {
-    private sealed class ImageTask(string path, string name)
+    private sealed class ImageTask(string path, string name) : INotifyPropertyChanged
     {
+        private string _status = "待检查";
+        private int _sliceCount;
+        private int _warningCount;
+        private BitmapSource? _thumbnail;
         public string Path { get; } = path;
         public string Name { get; } = name;
-        public string Status { get; set; } = "待检查";
-        public int SliceCount { get; set; }
-        public int WarningCount { get; set; }
+        public string Status { get => _status; set { if (_status == value) return; _status = value; Notify(); Notify(nameof(Summary)); } }
+        public int SliceCount { get => _sliceCount; set { if (_sliceCount == value) return; _sliceCount = value; Notify(); Notify(nameof(Summary)); } }
+        public int WarningCount { get => _warningCount; set { if (_warningCount == value) return; _warningCount = value; Notify(); Notify(nameof(Summary)); } }
+        public BitmapSource? Thumbnail { get => _thumbnail; set { _thumbnail = value; Notify(); } }
         public string LastError { get; set; } = string.Empty;
-        public override string ToString() => $"{(Status == "已导出" ? "↑" : Status == "已确认" ? "✓" : Status == "异常" ? "!" : "○")}  {LocalizationService.Translate(Status)} · {Name}\n    {LocalizationService.Translate("切片")} {SliceCount} · {LocalizationService.Translate("警告")} {WarningCount}";
+        public string Summary => $"{LocalizationService.Translate(Status)} · {LocalizationService.Translate("切片")} {SliceCount} · {LocalizationService.Translate("警告")} {WarningCount}";
+        public void RefreshLocalization() => Notify(nameof(Summary));
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void Notify([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
     private readonly record struct DetectionOptions(int Mode, double Sensitivity, int Grouping, double MinimumArea, int Padding);
     private sealed class EditHistory
@@ -35,7 +47,8 @@ public partial class MainWindow : Window
     private readonly record struct RegionSnapshot(Rect Bounds, bool RemoveBackground);
     private sealed record EditSnapshot(List<RegionSnapshot> Regions, List<ImageTransformOperation> Transforms);
     private List<CropRegion> _regions = [];
-    private readonly List<ImageTask> _tasks = [];
+    private readonly ObservableCollection<ImageTask> _tasks = [];
+    private readonly ICollectionView _taskView;
     private readonly Dictionary<string, List<CropRegion>> _regionStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, EditHistory> _histories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _longModeStates = new(StringComparer.OrdinalIgnoreCase);
@@ -80,6 +93,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _taskView = CollectionViewSource.GetDefaultView(_tasks);
+        _taskView.Filter = FilterTask;
+        TaskList.ItemsSource = _taskView;
+        RefreshTaskList();
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
@@ -151,7 +168,8 @@ public partial class MainWindow : Window
         ApplyFontFamily();
         LocalizationService.Apply(this);
         UpdateShortcutToolTips();
-        TaskList.Items.Refresh();
+        foreach (ImageTask task in _tasks) task.RefreshLocalization();
+        RefreshTaskList();
         UpdateNamingExample();
         SaveSettings();
         StatusText.Text = "设置已保存";
@@ -264,10 +282,64 @@ public partial class MainWindow : Window
             if (_tasks.Any(t => string.Equals(t.Path, path, StringComparison.OrdinalIgnoreCase))) continue;
             var task = new ImageTask(path, System.IO.Path.GetFileName(path));
             _longModeStates[path] = IsLongMode;
-            _tasks.Add(task); TaskList.Items.Add(task); firstAdded ??= task;
+            _tasks.Add(task); QueueThumbnail(task); firstAdded ??= task;
         }
         if (firstAdded is not null) TaskList.SelectedItem = firstAdded;
-        StatusText.Text = $"任务队列中共有 {_tasks.Count} 张图片";
+        RefreshTaskList(); StatusText.Text = $"任务队列中共有 {_tasks.Count} 张图片";
+    }
+
+    private async void QueueThumbnail(ImageTask task)
+    {
+        try
+        {
+            ImageTransformOperation[] transforms = _imageTransforms.TryGetValue(task.Path, out var saved) ? [.. saved] : [];
+            BitmapSource thumbnail = await Task.Run(() =>
+            {
+                BitmapSource result = ImageProcessingService.LoadThumbnail(task.Path, 64);
+                foreach (ImageTransformOperation operation in transforms)
+                    result = ImageProcessingService.ApplyManualTransform(result, operation);
+                return result;
+            });
+            if (_tasks.Contains(task)) task.Thumbnail = thumbnail;
+        }
+        catch { task.Thumbnail = null; }
+    }
+
+    private bool FilterTask(object item)
+    {
+        if (item is not ImageTask task || TaskFilterBox?.SelectedItem is not ComboBoxItem selected) return true;
+        return selected.Tag?.ToString() switch
+        {
+            "Pending" => task.Status == "待检查",
+            "Confirmed" => task.Status == "已确认",
+            "Issue" => task.Status == "异常" || task.WarningCount > 0,
+            "Exported" => task.Status == "已导出",
+            _ => true
+        };
+    }
+
+    private void TaskFilterBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_taskView is null) return;
+        RefreshTaskList();
+    }
+
+    private void RefreshTaskList()
+    {
+        ImageTask? selected = TaskList.SelectedItem as ImageTask;
+        _taskView.Refresh();
+        if (TaskFilterCountText is not null)
+            TaskFilterCountText.Text = $"{_taskView.Cast<object>().Count()} / {_tasks.Count}";
+        if (selected is not null && _taskView.Contains(selected)) return;
+        if (_taskView.Cast<ImageTask>().FirstOrDefault() is { } first)
+        {
+            TaskList.SelectedItem = first;
+            return;
+        }
+        TaskList.SelectedItem = null;
+        _bitmap = null; _sourcePath = null; _regions = []; _selected = null;
+        SourceImage.Source = null; Overlay.Children.Clear(); OutputPreview.Source = null;
+        EmptyState.Visibility = Visibility.Visible; ImageInfoText.Text = string.Empty;
     }
 
     private void SaveProject_Click(object sender, RoutedEventArgs e)
@@ -342,7 +414,7 @@ public partial class MainWindow : Window
     {
         var document = AtomicFileService.ReadJson<ProjectDocument>(path)
             ?? throw new InvalidDataException("项目文件内容为空或格式无效。");
-        TaskList.Items.Clear(); _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
+        _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
         _manualBackgroundColors.Clear(); _imageTransforms.Clear();
         int missing = 0;
         foreach (var savedTask in document.Tasks)
@@ -350,8 +422,8 @@ public partial class MainWindow : Window
             if (!File.Exists(savedTask.ImagePath)) { missing++; continue; }
             var task = new ImageTask(savedTask.ImagePath, System.IO.Path.GetFileName(savedTask.ImagePath))
                 { Status = savedTask.Status, SliceCount = savedTask.SliceCount, WarningCount = savedTask.WarningCount, LastError = savedTask.LastError };
-            _tasks.Add(task); TaskList.Items.Add(task); _longModeStates[task.Path] = savedTask.IsLongMode;
             _imageTransforms[task.Path] = savedTask.Transforms ?? [];
+            _tasks.Add(task); QueueThumbnail(task); _longModeStates[task.Path] = savedTask.IsLongMode;
             if (!string.IsNullOrWhiteSpace(savedTask.SampledBackgroundColor))
             {
                 try { _manualBackgroundColors[task.Path] = (Color)ColorConverter.ConvertFromString(savedTask.SampledBackgroundColor)!; }
@@ -365,7 +437,7 @@ public partial class MainWindow : Window
                     RemoveBackground = bounds.RemoveBackground
                 }).ToList();
         }
-        TaskList.Items.Refresh();
+        RefreshTaskList();
         if (_tasks.Count > 0) TaskList.SelectedIndex = 0;
         StatusText.Text = isRecovery
             ? $"已自动恢复上次会话：{_tasks.Count} 个任务"
@@ -427,6 +499,8 @@ public partial class MainWindow : Window
             _imageTransforms[_sourcePath] = transforms = [];
         AppendTransform(transforms, operation);
         _bitmap = ImageProcessingService.ApplyManualTransform(_bitmap, operation);
+        if (TaskList.SelectedItem is ImageTask currentTask && currentTask.Thumbnail is not null)
+            currentTask.Thumbnail = ImageProcessingService.ApplyManualTransform(currentTask.Thumbnail, operation);
         DisplayBitmap(_bitmap);
 
         bool quarterTurn = operation is ImageTransformOperation.RotateLeft or ImageTransformOperation.RotateRight;
@@ -549,7 +623,7 @@ public partial class MainWindow : Window
         {
             currentTask.SliceCount = _regions.Count;
             if (currentTask.Status == "已导出") currentTask.Status = "待检查";
-            TaskList.Items.Refresh();
+            RefreshTaskList();
         }
         _suppressRegionBackgroundChange = true;
         if (RemoveBackgroundForRegionBox is not null)
@@ -796,7 +870,7 @@ public partial class MainWindow : Window
                 task.WarningCount = previewItems.Count(item => item.SourcePath == task.Path && item.HasWarning);
                 if (task.WarningCount > 0 && task.Status == "已确认") task.Status = "待检查";
             }
-            TaskList.Items.Refresh();
+            RefreshTaskList();
             var previewDialog = new ExportPreviewWindow(previewItems) { Owner = this };
             WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
             if (previewDialog.ShowDialog() != true) { StatusText.Text = "已取消导出"; return; }
@@ -895,7 +969,7 @@ public partial class MainWindow : Window
                     }
                 }
             });
-            TaskList.Items.Refresh();
+            RefreshTaskList();
             bool cancelled = token.IsCancellationRequested;
             string detail = failures.Count == 0 ? string.Empty : "\n\n失败明细：\n" + string.Join("\n", failures.Take(15)) +
                 (failures.Count > 15 ? $"\n……另有 {failures.Count - 15} 项" : string.Empty);
@@ -905,7 +979,7 @@ public partial class MainWindow : Window
                 failed > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
             if (openFolderAfterExport && succeeded > 0) OpenFolder(exportDirectory);
         }
-        catch (Exception ex) { TaskList.Items.Refresh(); ShowMessage($"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { RefreshTaskList(); ShowMessage($"导出失败：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally
         {
             _exportCancellation?.Dispose(); _exportCancellation = null; _isExporting = false;
@@ -1197,7 +1271,7 @@ public partial class MainWindow : Window
     private void ConfirmTask_Click(object sender, RoutedEventArgs e)
     {
         if (TaskList.SelectedItem is not ImageTask task) return;
-        task.Status = "已确认"; TaskList.Items.Refresh();
+        task.Status = "已确认"; RefreshTaskList();
         StatusText.Text = $"已确认任务：{task.Name}";
         SaveRecoveryProject();
     }
@@ -1205,15 +1279,14 @@ public partial class MainWindow : Window
     private void NextIssue_Click(object sender, RoutedEventArgs e)
     {
         if (_tasks.Count == 0) return;
-        int start = Math.Max(-1, TaskList.SelectedIndex);
-        for (int offset = 1; offset <= _tasks.Count; offset++)
+        var issues = _tasks.Where(task => task.Status == "异常" || task.WarningCount > 0).ToList();
+        if (issues.Count > 0)
         {
-            int index = (start + offset) % _tasks.Count;
-            if (_tasks[index].Status == "异常" || _tasks[index].WarningCount > 0)
-            {
-                TaskList.SelectedIndex = index; TaskList.ScrollIntoView(TaskList.SelectedItem);
-                StatusText.Text = $"已定位异常任务：{_tasks[index].Name}"; return;
-            }
+            int current = TaskList.SelectedItem is ImageTask selected ? issues.IndexOf(selected) : -1;
+            ImageTask next = issues[(current + 1) % issues.Count];
+            TaskFilterBox.SelectedIndex = 3; RefreshTaskList();
+            TaskList.SelectedItem = next; TaskList.ScrollIntoView(next);
+            StatusText.Text = $"已定位异常任务：{next.Name}"; return;
         }
         StatusText.Text = "没有需要处理的异常任务";
     }
@@ -1223,7 +1296,7 @@ public partial class MainWindow : Window
         int count = 0;
         foreach (var task in _tasks.Where(task => task.SliceCount > 0 && task.WarningCount == 0 && task.Status != "异常"))
         { task.Status = "已确认"; count++; }
-        TaskList.Items.Refresh(); SaveRecoveryProject();
+        RefreshTaskList(); SaveRecoveryProject();
         StatusText.Text = $"已确认 {count} 个无警告任务";
     }
 
@@ -1238,15 +1311,16 @@ public partial class MainWindow : Window
         if (TaskList.SelectedItem is not ImageTask task) return;
         int index = TaskList.SelectedIndex;
         _tasks.Remove(task); _regionStates.Remove(task.Path); _histories.Remove(task.Path); _longModeStates.Remove(task.Path);
-        _manualBackgroundColors.Remove(task.Path); TaskList.Items.Remove(task);
-        if (_tasks.Count == 0)
+        _manualBackgroundColors.Remove(task.Path); _imageTransforms.Remove(task.Path); RefreshTaskList();
+        var visibleTasks = _taskView.Cast<ImageTask>().ToList();
+        if (visibleTasks.Count == 0)
         {
             _bitmap = null; _sourcePath = null; _regions = []; _selected = null;
             SourceImage.Source = null; Overlay.Children.Clear(); OutputPreview.Source = null;
             EmptyState.Visibility = Visibility.Visible;
-            ImageInfoText.Text = string.Empty; StatusText.Text = "请添加图片任务";
+            ImageInfoText.Text = string.Empty; StatusText.Text = _tasks.Count == 0 ? "请添加图片任务" : "当前筛选条件下没有任务";
         }
-        else TaskList.SelectedIndex = Math.Min(index, _tasks.Count - 1);
+        else TaskList.SelectedItem = visibleTasks[Math.Min(index, visibleTasks.Count - 1)];
     }
 
     private void BoundsBox_LostFocus(object sender, RoutedEventArgs e)
@@ -1458,7 +1532,7 @@ public partial class MainWindow : Window
                 task.WarningCount = warnings.Count(warning => warning.StartsWith(task.Name + " /", StringComparison.CurrentCultureIgnoreCase));
                 if (task.WarningCount > 0 && task.Status == "已确认") task.Status = "待检查";
             }
-            TaskList.Items.Refresh();
+            RefreshTaskList();
             string message = warnings.Count == 0
                 ? "检查完成，没有发现明显异常。"
                 : $"发现 {warnings.Count} 个建议复查的切片：\n\n" + string.Join("\n", warnings.Take(12)) +
