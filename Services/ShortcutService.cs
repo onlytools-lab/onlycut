@@ -21,6 +21,8 @@ public static class ShortcutService
         new("ZoomIn", "放大", "Zoom In", "+"),
         new("ZoomOut", "缩小", "Zoom Out", "-"),
         new("ZoomReset", "恢复 100%", "Reset to 100%", "0"),
+        new("FitWindow", "适应窗口", "Fit to Window", "Ctrl+0"),
+        new("FitWidth", "适应宽度", "Fit to Width", "Ctrl+Shift+0"),
         new("ExportAll", "导出全部", "Export All", "Ctrl+E"),
         new("Settings", "打开设置", "Open Settings", "Ctrl+,")
     ];

@@ -83,6 +83,7 @@ public static class LocalizationService
         ["导出与命名"]="Export & Naming", ["外观与语言"]="Appearance & Language", ["关于"]="About",
         ["关于 CutPic"]="About CutPic", ["版本"]="Version",
         ["轻量的智能宫格、素材与长图切分工具"]="A lightweight tool for smart grids, assets, and long-image slicing"
+        , ["适应窗口"]="Fit to Window", ["适应宽度"]="Fit to Width", ["缩放选项"]="Zoom Options"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";

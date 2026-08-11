@@ -1382,6 +1382,8 @@ public partial class MainWindow : Window
                 case "ZoomIn": SetZoom(_zoom * 1.2); break;
                 case "ZoomOut": SetZoom(_zoom / 1.2); break;
                 case "ZoomReset": SetZoom(1); break;
+                case "FitWindow": FitImageToViewport(false); break;
+                case "FitWidth": FitImageToViewport(true); break;
                 case "ExportAll": Export_Click(this, new RoutedEventArgs()); break;
                 case "Settings": Settings_Click(this, new RoutedEventArgs()); break;
                 default: return false;
@@ -1403,7 +1405,7 @@ public partial class MainWindow : Window
         SetTip(ConfirmTaskButton, "标记当前任务已确认", "ConfirmTask");
         SetTip(SettingsButton, "应用设置", "Settings"); SetTip(ExportAllButton, "导出全部", "ExportAll");
         SetTip(ZoomOutButton, "缩小", "ZoomOut"); SetTip(ZoomInButton, "放大", "ZoomIn");
-        SetTip(ZoomTextButton, "恢复 100%", "ZoomReset");
+        ZoomTextButton.ToolTip = LocalizationService.Translate("缩放选项");
         void SetTip(FrameworkElement element, string text, string id) =>
             element.ToolTip = $"{LocalizationService.Translate(text)}  ({_shortcuts[id]})";
     }
@@ -1493,9 +1495,45 @@ public partial class MainWindow : Window
     private void ZoomIn_Click(object sender, RoutedEventArgs e) => SetZoom(_zoom * 1.2);
     private void ZoomOut_Click(object sender, RoutedEventArgs e) => SetZoom(_zoom / 1.2);
     private void ZoomReset_Click(object sender, RoutedEventArgs e) => SetZoom(1);
+    private void ZoomMenu_Click(object sender, RoutedEventArgs e)
+    {
+        ZoomContextMenu.PlacementTarget = ZoomTextButton;
+        ZoomContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        ZoomContextMenu.IsOpen = true;
+    }
+
+    private void ZoomContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        FitWindowMenuItem.Header = $"{LocalizationService.Translate("适应窗口")}  ({_shortcuts["FitWindow"]})";
+        FitWidthMenuItem.Header = $"{LocalizationService.Translate("适应宽度")}  ({_shortcuts["FitWidth"]})";
+        ActualSizeMenuItem.Header = $"{LocalizationService.Translate("恢复 100%")}  ({_shortcuts["ZoomReset"]})";
+    }
+
+    private void ZoomFitWindow_Click(object sender, RoutedEventArgs e) => FitImageToViewport(false);
+    private void ZoomFitWidth_Click(object sender, RoutedEventArgs e) => FitImageToViewport(true);
+
+    private void FitImageToViewport(bool widthOnly)
+    {
+        if (_bitmap is null) return;
+        ImageScrollViewer.UpdateLayout();
+        double viewportWidth = ImageScrollViewer.ViewportWidth;
+        double viewportHeight = ImageScrollViewer.ViewportHeight;
+        if (!double.IsFinite(viewportWidth) || viewportWidth <= 0) viewportWidth = ImageScrollViewer.ActualWidth;
+        if (!double.IsFinite(viewportHeight) || viewportHeight <= 0) viewportHeight = ImageScrollViewer.ActualHeight;
+        const double canvasPadding = 56;
+        double widthScale = Math.Max(1, viewportWidth - canvasPadding) / _bitmap.PixelWidth;
+        double heightScale = Math.Max(1, viewportHeight - canvasPadding) / _bitmap.PixelHeight;
+        SetZoom(widthOnly ? widthScale : Math.Min(widthScale, heightScale));
+        Dispatcher.BeginInvoke(() =>
+        {
+            ImageScrollViewer.ScrollToHorizontalOffset(0);
+            ImageScrollViewer.ScrollToVerticalOffset(0);
+        }, DispatcherPriority.Loaded);
+    }
+
     private void SetZoom(double value, Point? anchor = null)
     {
-        double old = _zoom; _zoom = Math.Clamp(value, .15, 5);
+        double old = _zoom; _zoom = Math.Clamp(value, .005, 5);
         Point point = anchor ?? new Point(ImageScrollViewer.ViewportWidth / 2, ImageScrollViewer.ViewportHeight / 2);
         double oldX = ImageScrollViewer.HorizontalOffset, oldY = ImageScrollViewer.VerticalOffset;
         CanvasScale.ScaleX = CanvasScale.ScaleY = _zoom;
@@ -1503,7 +1541,7 @@ public partial class MainWindow : Window
         double ratio = _zoom / old;
         ImageScrollViewer.ScrollToHorizontalOffset((oldX + point.X) * ratio - point.X);
         ImageScrollViewer.ScrollToVerticalOffset((oldY + point.Y) * ratio - point.Y);
-        ZoomTextButton.Content = $"{_zoom:P0}";
+        ZoomValueText.Text = $"{_zoom:P0}";
     }
 
     private static string SettingsPath => System.IO.Path.Combine(LocalDataDirectory, "settings.json");
