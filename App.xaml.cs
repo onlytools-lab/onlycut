@@ -41,6 +41,10 @@ public partial class App : Application
         {
             var window = new MainWindow(); window.Show(); window.Close(); Shutdown(); return;
         }
+        if (e.Args.Length >= 1 && e.Args[0] == "--smoke-long-edit")
+        {
+            RunLongEditSmokeTest(); Shutdown(); return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-export-preview")
         {
             LocalizationService.SetLanguage(e.Args.Length >= 2 ? e.Args[1] : "zh-CN");
@@ -146,6 +150,26 @@ public partial class App : Application
             $"Slices={regions.Count}{Environment.NewLine}" +
             $"TotalHeight={regions.Sum(r => r.Bounds.Height)}{Environment.NewLine}" +
             string.Join(Environment.NewLine, regions.Select(r => $"{r.Number}: {r.Bounds}")));
+    }
+
+    private static void RunLongEditSmokeTest()
+    {
+        const int width = 600, height = 900;
+        var regions = CutPic.MainWindow.BuildLongRegions(width, height, 0, 3, 0, []);
+        if (!CutPic.MainWindow.TryInsertLongDivider(regions, width, 150, out int inserted) || inserted != 0 || regions.Count != 4)
+            throw new InvalidDataException("Long divider insertion failed.");
+        CutPic.MainWindow.MoveLongDivider(regions, width, 1, 350);
+        CutPic.MainWindow.RemoveLongDivider(regions, width, 0);
+        if (regions.Count != 3 || Math.Abs(regions[0].Bounds.Height - 350) > .01)
+            throw new InvalidDataException("Long divider move/remove failed.");
+        double y = 0;
+        foreach (CropRegion region in regions)
+        {
+            if (region.Bounds.X != 0 || region.Bounds.Width != width || region.Bounds.Y != y || region.Bounds.Height < 20)
+                throw new InvalidDataException("Long divider continuity failed.");
+            y = region.Bounds.Bottom;
+        }
+        if (Math.Abs(y - height) > .01) throw new InvalidDataException("Long divider total height changed.");
     }
 
     private static void RunTransparentSmokeTest(string inputPath, string outputDirectory,

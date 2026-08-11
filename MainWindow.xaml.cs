@@ -45,10 +45,11 @@ public partial class MainWindow : Window
     private BitmapSource? _bitmap;
     private string? _sourcePath;
     private CropRegion? _selected;
+    private int _selectedLongDividerIndex = -1;
     private Point _dragStart;
     private Rect _dragOriginal;
-    private Rect _dragNextOriginal;
     private DragMode _dragMode;
+    private bool _dragHistoryPushed;
     private double _zoom = 1;
     private bool _suppressWorkModeChange;
     private bool _suppressRegionBackgroundChange;
@@ -73,7 +74,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _recoveryTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string? _currentProjectPath;
     private bool IsLongMode => WorkModeBox.SelectedIndex == 1;
-    private enum DragMode { None, Move, Resize }
+    private enum DragMode { None, Move, Resize, LongDivider }
 
     public MainWindow()
     {
@@ -375,6 +376,7 @@ public partial class MainWindow : Window
         {
             _bitmap = ImageProcessingService.LoadImage(path);
             _sourcePath = path;
+            _selectedLongDividerIndex = -1;
             SourceImage.Source = _bitmap;
             EmptyState.Visibility = Visibility.Collapsed;
             SourceImage.Width = Overlay.Width = ImageHost.Width = _bitmap.PixelWidth;
@@ -417,6 +419,8 @@ public partial class MainWindow : Window
 
     private void RenderRegions(bool updatePreview = true)
     {
+        if (!IsLongMode || _selectedLongDividerIndex < 0 || _selectedLongDividerIndex >= _regions.Count - 1)
+            _selectedLongDividerIndex = -1;
         Overlay.Children.Clear();
         foreach (var region in _regions)
         {
@@ -429,23 +433,33 @@ public partial class MainWindow : Window
                 Background = new SolidColorBrush(Color.FromArgb(selected ? (byte)24 : (byte)12, 50, 190, 255)),
                 Cursor = IsLongMode ? Cursors.Arrow : Cursors.SizeAll
             };
-            border.Child = new Grid
-            {
-                Children =
-                {
-                    new Border { Background = new SolidColorBrush(Color.FromArgb(210, 15, 18, 24)), CornerRadius = new CornerRadius(3),
-                        Padding = new Thickness(6,2,6,2), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-                        Child = new TextBlock { Text = region.RemoveBackground ? region.Number.ToString() : $"{region.Number} · 保留背景", Foreground = Brushes.White, FontWeight = FontWeights.Bold } },
-                    new Ellipse { Width = IsLongMode ? region.Bounds.Width : 14, Height = IsLongMode ? 5 : 14,
-                        Fill = Brushes.White, Stroke = Brushes.DodgerBlue, StrokeThickness = IsLongMode ? 1 : 2,
-                        HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
-                        Margin = IsLongMode ? new Thickness(0,0,0,-3) : new Thickness(0,0,-7,-7),
-                        Cursor = IsLongMode ? Cursors.SizeNS : Cursors.SizeNWSE, Tag = "Handle" }
-                }
-            };
+            var regionVisual = new Grid();
+            regionVisual.Children.Add(new Border { Background = new SolidColorBrush(Color.FromArgb(210, 15, 18, 24)), CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(6,2,6,2), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+                Child = new TextBlock { Text = region.RemoveBackground ? region.Number.ToString() : $"{region.Number} · 保留背景", Foreground = Brushes.White, FontWeight = FontWeights.Bold } });
+            if (!IsLongMode)
+                regionVisual.Children.Add(new Ellipse { Width = 14, Height = 14, Fill = Brushes.White, Stroke = Brushes.DodgerBlue, StrokeThickness = 2,
+                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0,0,-7,-7),
+                    Cursor = Cursors.SizeNWSE, Tag = "Handle" });
+            border.Child = regionVisual;
             border.PreviewMouseLeftButtonDown += Region_MouseLeftButtonDown;
             Canvas.SetLeft(border, region.Bounds.X); Canvas.SetTop(border, region.Bounds.Y);
             Overlay.Children.Add(border);
+        }
+        if (IsLongMode)
+        {
+            for (int i = 0; i < _regions.Count - 1; i++)
+            {
+                bool selectedDivider = i == _selectedLongDividerIndex;
+                var hitArea = new Grid { Width = _bitmap?.PixelWidth ?? _regions[i].Bounds.Width, Height = 16,
+                    Background = Brushes.Transparent, Cursor = Cursors.SizeNS, Tag = i, ToolTip = LocalizationService.Translate("拖动调整切割线；按 Delete 删除") };
+                hitArea.Children.Add(new Border { Height = selectedDivider ? 5 : 3,
+                    Background = new SolidColorBrush(selectedDivider ? Color.FromRgb(255, 190, 55) : Color.FromRgb(47, 211, 255)),
+                    VerticalAlignment = VerticalAlignment.Center });
+                hitArea.MouseLeftButtonDown += LongDivider_MouseLeftButtonDown;
+                Canvas.SetLeft(hitArea, 0); Canvas.SetTop(hitArea, _regions[i].Bounds.Bottom - 8);
+                Panel.SetZIndex(hitArea, 10); Overlay.Children.Add(hitArea);
+            }
         }
         UpdateBoundsBoxes();
         if (TaskList.SelectedItem is ImageTask currentTask && currentTask.SliceCount != _regions.Count)
@@ -467,20 +481,30 @@ public partial class MainWindow : Window
     private void Region_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Border border || border.Tag is not CropRegion region) return;
+        if (IsLongMode)
+        {
+            _selected = region; _selectedLongDividerIndex = -1;
+            if (e.ClickCount >= 2) AddLongDividerAt(e.GetPosition(Overlay).Y);
+            else RenderRegions();
+            e.Handled = true; return;
+        }
         PushHistory();
         _selected = region;
         _dragStart = e.GetPosition(Overlay);
         _dragOriginal = region.Bounds;
-        int longIndex = _regions.IndexOf(region);
-        _dragNextOriginal = IsLongMode && longIndex >= 0 && longIndex < _regions.Count - 1
-            ? _regions[longIndex + 1].Bounds : Rect.Empty;
         var local = e.GetPosition(border);
-        _dragMode = IsLongMode
-            ? (local.Y >= border.ActualHeight - 30 ? DragMode.Resize : DragMode.None)
-            : (local.X >= border.ActualWidth - 24 && local.Y >= border.ActualHeight - 24 ? DragMode.Resize : DragMode.Move);
+        _dragMode = local.X >= border.ActualWidth - 24 && local.Y >= border.ActualHeight - 24 ? DragMode.Resize : DragMode.Move;
         Overlay.CaptureMouse();
         RenderRegions();
         e.Handled = true;
+    }
+
+    private void LongDivider_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: int index } || index < 0 || index >= _regions.Count - 1) return;
+        _selectedLongDividerIndex = index; _selected = _regions[index];
+        _dragStart = e.GetPosition(Overlay); _dragOriginal = _regions[index].Bounds;
+        _dragHistoryPushed = false; _dragMode = DragMode.LongDivider; Overlay.CaptureMouse(); RenderRegions(); e.Handled = true;
     }
 
     private void Overlay_MouseMove(object sender, MouseEventArgs e)
@@ -491,12 +515,9 @@ public partial class MainWindow : Window
         if (IsLongMode)
         {
             int index = _regions.IndexOf(_selected);
-            if (_dragMode != DragMode.Resize || index < 0 || index >= _regions.Count - 1) return;
-            var next = _regions[index + 1];
-            double combined = _dragOriginal.Height + _dragNextOriginal.Height;
-            double newHeight = Math.Round(Math.Clamp(_dragOriginal.Height + dy, 20, combined - 20));
-            _selected.Bounds = new Rect(0, _dragOriginal.Y, _bitmap.PixelWidth, newHeight);
-            next.Bounds = new Rect(0, _dragOriginal.Y + newHeight, _bitmap.PixelWidth, combined - newHeight);
+            if (_dragMode != DragMode.LongDivider || index < 0 || index >= _regions.Count - 1) return;
+            if (!_dragHistoryPushed) { PushHistory(); _dragHistoryPushed = true; }
+            MoveLongDivider(_regions, _bitmap.PixelWidth, index, _dragOriginal.Bottom + dy);
             RenderRegions(false);
             return;
         }
@@ -511,10 +532,27 @@ public partial class MainWindow : Window
     }
 
     private void Overlay_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    { _dragMode = DragMode.None; Overlay.ReleaseMouseCapture(); UpdateOutputPreview(); }
+    { _dragMode = DragMode.None; _dragHistoryPushed = false; Overlay.ReleaseMouseCapture(); UpdateOutputPreview(); }
 
     private void Overlay_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    { if (e.OriginalSource == Overlay) { _selected = null; RenderRegions(); } }
+    {
+        if (e.OriginalSource != Overlay) return;
+        if (IsLongMode && e.ClickCount >= 2) { AddLongDividerAt(e.GetPosition(Overlay).Y); return; }
+        _selected = null; _selectedLongDividerIndex = -1; RenderRegions();
+    }
+
+    private void AddLongDividerAt(double y)
+    {
+        if (!IsLongMode || _bitmap is null) return;
+        y = Math.Round(y);
+        int candidate = _regions.FindIndex(region => y >= region.Bounds.Top + 20 && y <= region.Bounds.Bottom - 20);
+        if (candidate < 0) { StatusText.Text = LocalizationService.Translate("切割线距离相邻边界至少需要 20px"); return; }
+        PushHistory();
+        TryInsertLongDivider(_regions, _bitmap.PixelWidth, y, out int index);
+        _selected = _regions[index]; _selectedLongDividerIndex = index;
+        RenumberRegions(); RenderRegions();
+        StatusText.Text = LocalizationService.Translate("已新增切割线，可拖动继续调整");
+    }
 
     private void Overlay_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -535,14 +573,16 @@ public partial class MainWindow : Window
         if (_bitmap is null) return;
         if (IsLongMode)
         {
-            if (_selected is null || _selected.Bounds.Height < 40) return;
+            CropRegion? target = _selected ?? _regions.FirstOrDefault();
+            if (target is null || target.Bounds.Height < 40) return;
             PushHistory();
-            int index = _regions.IndexOf(_selected);
-            double firstHeight = Math.Floor(_selected.Bounds.Height / 2);
-            double secondHeight = _selected.Bounds.Height - firstHeight;
-            _selected.Bounds = new Rect(0, _selected.Bounds.Y, _bitmap.PixelWidth, firstHeight);
-            _regions.Insert(index + 1, new CropRegion { Bounds = new Rect(0, _selected.Bounds.Bottom, _bitmap.PixelWidth, secondHeight) });
-            RenumberRegions(); RenderRegions(); return;
+            int index = _regions.IndexOf(target);
+            double firstHeight = Math.Floor(target.Bounds.Height / 2);
+            double secondHeight = target.Bounds.Height - firstHeight;
+            target.Bounds = new Rect(0, target.Bounds.Y, _bitmap.PixelWidth, firstHeight);
+            _regions.Insert(index + 1, new CropRegion { Bounds = new Rect(0, target.Bounds.Bottom, _bitmap.PixelWidth, secondHeight) });
+            _selected = target; _selectedLongDividerIndex = index;
+            RenumberRegions(); RenderRegions(); StatusText.Text = LocalizationService.Translate("已在当前切片中间新增切割线"); return;
         }
         PushHistory();
         double size = Math.Min(_bitmap.PixelWidth, _bitmap.PixelHeight) * .3;
@@ -558,21 +598,13 @@ public partial class MainWindow : Window
         if (_selected is null) return;
         if (IsLongMode)
         {
-            if (_regions.Count <= 1) return;
+            if (_regions.Count <= 1 || _selectedLongDividerIndex < 0 || _selectedLongDividerIndex >= _regions.Count - 1)
+            { StatusText.Text = LocalizationService.Translate("请先选择要删除的切割线"); return; }
             PushHistory();
-            int index = _regions.IndexOf(_selected);
-            if (index < _regions.Count - 1)
-            {
-                var next = _regions[index + 1];
-                next.Bounds = new Rect(0, _selected.Bounds.Y, next.Bounds.Width, _selected.Bounds.Height + next.Bounds.Height);
-            }
-            else
-            {
-                var previous = _regions[index - 1];
-                previous.Bounds = new Rect(0, previous.Bounds.Y, previous.Bounds.Width, previous.Bounds.Height + _selected.Bounds.Height);
-            }
-            _regions.RemoveAt(index); _selected = _regions[Math.Min(index, _regions.Count - 1)];
-            RenumberRegions(); RenderRegions(); return;
+            int index = _selectedLongDividerIndex;
+            RemoveLongDivider(_regions, _bitmap!.PixelWidth, index);
+            _selected = _regions[index]; _selectedLongDividerIndex = -1;
+            RenumberRegions(); RenderRegions(); StatusText.Text = LocalizationService.Translate("已删除切割线并合并相邻切片"); return;
         }
         PushHistory();
         _regions.Remove(_selected); _selected = null;
@@ -922,6 +954,7 @@ public partial class MainWindow : Window
         CleanCornersBox.IsEnabled = false;
         XBox.IsEnabled = !IsLongMode; YBox.IsEnabled = !IsLongMode; WidthBox.IsEnabled = !IsLongMode;
         TransparentBackgroundBox_Click(this, null!);
+        UpdateShortcutToolTips();
     }
 
     private void LongSplitModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -951,6 +984,7 @@ public partial class MainWindow : Window
                 : BuildLongRegions(_bitmap.PixelWidth, _bitmap.PixelHeight, mode, count, fixedHeight, custom);
             if (pushHistory && _regions.Count > 0) PushHistory();
             _regions = generated;
+            _selectedLongDividerIndex = -1;
             if (_sourcePath is not null)
             {
                 _regionStates[_sourcePath] = _regions;
@@ -1008,6 +1042,39 @@ public partial class MainWindow : Window
             y += heights[i];
         }
         return result;
+    }
+
+    internal static bool TryInsertLongDivider(List<CropRegion> regions, int width, double y, out int dividerIndex)
+    {
+        y = Math.Round(y);
+        dividerIndex = regions.FindIndex(region => y >= region.Bounds.Top + 20 && y <= region.Bounds.Bottom - 20);
+        if (dividerIndex < 0) return false;
+        CropRegion upper = regions[dividerIndex];
+        double bottom = upper.Bounds.Bottom;
+        upper.Bounds = new Rect(0, upper.Bounds.Top, width, y - upper.Bounds.Top);
+        regions.Insert(dividerIndex + 1, new CropRegion { Bounds = new Rect(0, y, width, bottom - y) });
+        for (int i = 0; i < regions.Count; i++) regions[i].Number = i + 1;
+        return true;
+    }
+
+    internal static void MoveLongDivider(List<CropRegion> regions, int width, int dividerIndex, double y)
+    {
+        if (dividerIndex < 0 || dividerIndex >= regions.Count - 1) throw new ArgumentOutOfRangeException(nameof(dividerIndex));
+        CropRegion upper = regions[dividerIndex], lower = regions[dividerIndex + 1];
+        double top = upper.Bounds.Top, bottom = lower.Bounds.Bottom;
+        y = Math.Round(Math.Clamp(y, top + 20, bottom - 20));
+        upper.Bounds = new Rect(0, top, width, y - top);
+        lower.Bounds = new Rect(0, y, width, bottom - y);
+    }
+
+    internal static void RemoveLongDivider(List<CropRegion> regions, int width, int dividerIndex)
+    {
+        if (regions.Count <= 1 || dividerIndex < 0 || dividerIndex >= regions.Count - 1)
+            throw new ArgumentOutOfRangeException(nameof(dividerIndex));
+        CropRegion upper = regions[dividerIndex], lower = regions[dividerIndex + 1];
+        upper.Bounds = new Rect(0, upper.Bounds.Top, width, lower.Bounds.Bottom - upper.Bounds.Top);
+        regions.RemoveAt(dividerIndex + 1);
+        for (int i = 0; i < regions.Count; i++) regions[i].Number = i + 1;
     }
 
     private static IEnumerable<int> ParseHeightList(string text) => text
@@ -1399,8 +1466,8 @@ public partial class MainWindow : Window
         SetTip(ImportFolderButton, "导入整个文件夹", "ImportFolder");
         SetTip(SaveProjectButton, "保存 CutPic 项目", "SaveProject");
         SetTip(DetectButton, "按当前参数重新识别", "AutoDetect");
-        SetTip(AddRegionButton, "添加选框", "AddRegion");
-        SetTip(DeleteRegionButton, "删除选框", "DeleteRegion");
+        SetTip(AddRegionButton, IsLongMode ? "在当前切片中间新增切割线" : "添加选框", "AddRegion");
+        SetTip(DeleteRegionButton, IsLongMode ? "删除选中的切割线" : "删除选框", "DeleteRegion");
         SetTip(UndoButton, "撤销", "Undo"); SetTip(RedoButton, "重做", "Redo");
         SetTip(ConfirmTaskButton, "标记当前任务已确认", "ConfirmTask");
         SetTip(SettingsButton, "应用设置", "Settings"); SetTip(ExportAllButton, "导出全部", "ExportAll");
@@ -1432,7 +1499,7 @@ public partial class MainWindow : Window
         _regions = snapshot.Select((r, i) => new CropRegion
             { Number = i + 1, Bounds = r.Bounds, RemoveBackground = r.RemoveBackground }).ToList();
         if (_sourcePath is not null) _regionStates[_sourcePath] = _regions;
-        _selected = _regions.FirstOrDefault(); RenderRegions();
+        _selected = _regions.FirstOrDefault(); _selectedLongDividerIndex = -1; RenderRegions();
     }
 
     private void Undo_Click(object sender, RoutedEventArgs e) => Undo();

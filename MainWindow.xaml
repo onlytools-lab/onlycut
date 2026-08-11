@@ -241,7 +241,9 @@
                            Style="{StaticResource CompactOutlinedTextBox}" Margin="6,5,0,8"/>
                 </UniformGrid>
                 <TextBlock Text="最后一段始终使用剩余高度；切片之间无间距，宽度始终为原图 100%。"
-                           Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="2,0,2,10"/>
+                           Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="2,0,2,4"/>
+                <TextBlock Text="双击图片新增切割线；拖动切割线调整；选中后按 Delete 删除。"
+                           Foreground="{DynamicResource MaterialDesign.Brush.Secondary}" FontSize="12" TextWrapping="Wrap" Margin="2,0,2,10"/>
                 <Button Content="生成长图切片" Click="GenerateLongSlices_Click"
                         Style="{StaticResource MaterialDesignRaisedButton}" HorizontalAlignment="Stretch"/>
               </StackPanel>

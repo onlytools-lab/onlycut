@@ -84,6 +84,15 @@ public static class LocalizationService
         ["关于 CutPic"]="About CutPic", ["版本"]="Version",
         ["轻量的智能宫格、素材与长图切分工具"]="A lightweight tool for smart grids, assets, and long-image slicing"
         , ["适应窗口"]="Fit to Window", ["适应宽度"]="Fit to Width", ["缩放选项"]="Zoom Options"
+        , ["拖动调整切割线；按 Delete 删除"]="Drag to adjust the divider; press Delete to remove it"
+        , ["切割线距离相邻边界至少需要 20px"]="A divider must be at least 20px from adjacent boundaries"
+        , ["已新增切割线，可拖动继续调整"]="Divider added. Drag it to adjust"
+        , ["已在当前切片中间新增切割线"]="A divider was added at the center of the current slice"
+        , ["请先选择要删除的切割线"]="Select a divider to delete first"
+        , ["已删除切割线并合并相邻切片"]="Divider removed and adjacent slices merged"
+        , ["双击图片新增切割线；拖动切割线调整；选中后按 Delete 删除。"]="Double-click the image to add a divider; drag to adjust it; select it and press Delete to remove it."
+        , ["在当前切片中间新增切割线"]="Add a divider at the center of the current slice"
+        , ["删除选中的切割线"]="Delete the selected divider"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";
