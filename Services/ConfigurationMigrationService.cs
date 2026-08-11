@@ -7,7 +7,7 @@ public sealed class UnsupportedConfigurationVersionException(string message) : E
 
 public static class ConfigurationMigrationService
 {
-    public const int CurrentSettingsVersion = 2;
+    public const int CurrentSettingsVersion = 3;
     public const int CurrentProjectVersion = 4;
 
     public static bool Migrate(AppSettings settings)
@@ -25,6 +25,8 @@ public static class ConfigurationMigrationService
         settings.LanguageCode = settings.LanguageCode == "en-US" ? "en-US" : "zh-CN";
         settings.DefaultPresetId = string.IsNullOrWhiteSpace(settings.DefaultPresetId) ? "builtin-card" : settings.DefaultPresetId;
         settings.AutoSaveIntervalSeconds = Math.Clamp(settings.AutoSaveIntervalSeconds <= 0 ? 15 : settings.AutoSaveIntervalSeconds, 5, 300);
+        settings.LeftSidebarWidth = Math.Clamp(settings.LeftSidebarWidth <= 0 ? 248 : settings.LeftSidebarWidth, 200, 480);
+        settings.RightSidebarWidth = Math.Clamp(settings.RightSidebarWidth <= 0 ? 372 : settings.RightSidebarWidth, 300, 560);
         var shortcuts = ShortcutService.MergeWithDefaults(settings.Shortcuts);
         changed |= settings.Shortcuts is null || shortcuts.Count != settings.Shortcuts.Count || shortcuts.Any(pair =>
             !settings.Shortcuts.TryGetValue(pair.Key, out string? value) || value != pair.Value);

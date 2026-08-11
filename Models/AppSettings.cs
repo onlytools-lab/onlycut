@@ -45,5 +45,9 @@ public sealed class AppSettings
     public string LanguageCode { get; set; } = "zh-CN";
     public string DefaultPresetId { get; set; } = "builtin-card";
     public bool OnlyConfirmedTasks { get; set; }
+    public double LeftSidebarWidth { get; set; } = 248;
+    public double RightSidebarWidth { get; set; } = 372;
+    public bool IsLeftSidebarCollapsed { get; set; }
+    public bool IsRightSidebarCollapsed { get; set; }
     public Dictionary<string, string> Shortcuts { get; set; } = Services.ShortcutService.CreateDefaults();
 }

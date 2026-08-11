@@ -78,6 +78,10 @@ public partial class MainWindow : Window
     private bool _retryFailedOnly;
     private bool _settingsWriteBlocked;
     private bool _recoveryWriteBlocked;
+    private double _leftSidebarWidth = 248;
+    private double _rightSidebarWidth = 372;
+    private bool _isLeftSidebarCollapsed;
+    private bool _isRightSidebarCollapsed;
     private readonly record struct ExportProgressInfo(int Current, int Total, string FileName);
     private sealed class ExportSummary
     {
@@ -1780,6 +1784,44 @@ public partial class MainWindow : Window
     }
 
     private static string SettingsPath => System.IO.Path.Combine(LocalDataDirectory, "settings.json");
+    private void ApplySidebarLayout()
+    {
+        LeftSidebarColumn.Width = new GridLength(_isLeftSidebarCollapsed ? 0 : _leftSidebarWidth);
+        LeftSplitterColumn.Width = new GridLength(_isLeftSidebarCollapsed ? 0 : 5);
+        RightSidebarColumn.Width = new GridLength(_isRightSidebarCollapsed ? 0 : _rightSidebarWidth);
+        RightSplitterColumn.Width = new GridLength(_isRightSidebarCollapsed ? 0 : 5);
+        LeftSidebarSplitter.IsEnabled = !_isLeftSidebarCollapsed;
+        RightSidebarSplitter.IsEnabled = !_isRightSidebarCollapsed;
+        ToggleLeftSidebarIcon.Kind = _isLeftSidebarCollapsed
+            ? MaterialDesignThemes.Wpf.PackIconKind.ChevronRight
+            : MaterialDesignThemes.Wpf.PackIconKind.ChevronLeft;
+        ToggleRightSidebarIcon.Kind = _isRightSidebarCollapsed
+            ? MaterialDesignThemes.Wpf.PackIconKind.ChevronLeft
+            : MaterialDesignThemes.Wpf.PackIconKind.ChevronRight;
+    }
+
+    private void ToggleLeftSidebar_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_isLeftSidebarCollapsed && LeftSidebarColumn.ActualWidth > 0)
+            _leftSidebarWidth = Math.Clamp(LeftSidebarColumn.ActualWidth, 200, 480);
+        _isLeftSidebarCollapsed = !_isLeftSidebarCollapsed;
+        ApplySidebarLayout();
+    }
+
+    private void ToggleRightSidebar_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_isRightSidebarCollapsed && RightSidebarColumn.ActualWidth > 0)
+            _rightSidebarWidth = Math.Clamp(RightSidebarColumn.ActualWidth, 300, 560);
+        _isRightSidebarCollapsed = !_isRightSidebarCollapsed;
+        ApplySidebarLayout();
+    }
+
+    private void SidebarSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        if (!_isLeftSidebarCollapsed) _leftSidebarWidth = Math.Clamp(LeftSidebarColumn.ActualWidth, 200, 480);
+        if (!_isRightSidebarCollapsed) _rightSidebarWidth = Math.Clamp(RightSidebarColumn.ActualWidth, 300, 560);
+    }
+
     private void LoadSettings()
     {
         try
@@ -1818,6 +1860,11 @@ public partial class MainWindow : Window
             _defaultPresetId = settings.DefaultPresetId;
             _shortcuts = ShortcutService.MergeWithDefaults(settings.Shortcuts);
             OnlyConfirmedTasksBox.IsChecked = settings.OnlyConfirmedTasks;
+            _leftSidebarWidth = settings.LeftSidebarWidth;
+            _rightSidebarWidth = settings.RightSidebarWidth;
+            _isLeftSidebarCollapsed = settings.IsLeftSidebarCollapsed;
+            _isRightSidebarCollapsed = settings.IsRightSidebarCollapsed;
+            ApplySidebarLayout();
             _suppressWorkModeChange = true;
             WorkModeBox.SelectedIndex = Math.Clamp(settings.WorkModeIndex, 0, 1);
             _suppressWorkModeChange = false;
@@ -1872,6 +1919,10 @@ public partial class MainWindow : Window
                 LanguageCode = _languageCode,
                 DefaultPresetId = _defaultPresetId,
                 OnlyConfirmedTasks = OnlyConfirmedTasksBox.IsChecked == true,
+                LeftSidebarWidth = _isLeftSidebarCollapsed ? _leftSidebarWidth : Math.Clamp(LeftSidebarColumn.ActualWidth, 200, 480),
+                RightSidebarWidth = _isRightSidebarCollapsed ? _rightSidebarWidth : Math.Clamp(RightSidebarColumn.ActualWidth, 300, 560),
+                IsLeftSidebarCollapsed = _isLeftSidebarCollapsed,
+                IsRightSidebarCollapsed = _isRightSidebarCollapsed,
                 Shortcuts = new Dictionary<string, string>(_shortcuts, StringComparer.OrdinalIgnoreCase),
                 WorkModeIndex = WorkModeBox.SelectedIndex, LongSplitModeIndex = LongSplitModeBox.SelectedIndex,
                 LongSliceCount = LongCountBox.Text, LongFixedHeight = LongFixedHeightBox.Text,

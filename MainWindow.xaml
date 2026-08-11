@@ -67,9 +67,11 @@
 
     <Grid x:Name="WorkspaceGrid" Grid.Row="1">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="248"/>
+        <ColumnDefinition x:Name="LeftSidebarColumn" Width="248" MinWidth="0"/>
+        <ColumnDefinition x:Name="LeftSplitterColumn" Width="5"/>
         <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="372"/>
+        <ColumnDefinition x:Name="RightSplitterColumn" Width="5"/>
+        <ColumnDefinition x:Name="RightSidebarColumn" Width="372" MinWidth="0"/>
       </Grid.ColumnDefinitions>
 
       <!-- Task rail -->
@@ -144,8 +146,12 @@
         </DockPanel>
       </Border>
 
+      <GridSplitter x:Name="LeftSidebarSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                    Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                    DragCompleted="SidebarSplitter_DragCompleted"/>
+
       <!-- Canvas -->
-      <Grid Grid.Column="1" Background="{StaticResource AppCanvasBrush}">
+      <Grid Grid.Column="2" Background="{StaticResource AppCanvasBrush}">
         <materialDesign:Card Margin="16" Background="#090C12" UniformCornerRadius="12" materialDesign:ElevationAssist.Elevation="Dp2">
           <Grid>
             <ScrollViewer x:Name="ImageScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
@@ -221,10 +227,24 @@
             </StackPanel>
           </Grid>
         </materialDesign:Card>
+        <Button x:Name="ToggleLeftSidebarButton" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,0,0"
+                Width="26" Height="54" Padding="0" Panel.ZIndex="20" Click="ToggleLeftSidebar_Click"
+                Style="{StaticResource MaterialDesignFloatingActionMiniButton}" ToolTip="折叠/展开任务栏">
+          <materialDesign:PackIcon x:Name="ToggleLeftSidebarIcon" Kind="ChevronLeft" Width="18" Height="18"/>
+        </Button>
+        <Button x:Name="ToggleRightSidebarButton" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
+                Width="26" Height="54" Padding="0" Panel.ZIndex="20" Click="ToggleRightSidebar_Click"
+                Style="{StaticResource MaterialDesignFloatingActionMiniButton}" ToolTip="折叠/展开参数栏">
+          <materialDesign:PackIcon x:Name="ToggleRightSidebarIcon" Kind="ChevronRight" Width="18" Height="18"/>
+        </Button>
       </Grid>
 
+      <GridSplitter x:Name="RightSidebarSplitter" Grid.Column="3" Width="5" HorizontalAlignment="Stretch"
+                    Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                    DragCompleted="SidebarSplitter_DragCompleted"/>
+
       <!-- Properties -->
-      <Border Grid.Column="2" Background="{StaticResource AppSurfaceBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1,0,0,0">
+      <Border Grid.Column="4" Background="{StaticResource AppSurfaceBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1,0,0,0">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Margin="18">
             <TextBlock Text="处理预设" Style="{StaticResource PanelHeader}"/>
