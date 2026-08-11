@@ -39,25 +39,22 @@
           <Button Style="{StaticResource TopActionButton}" Click="SaveProject_Click" ToolTip="保存 CutPic 项目">
             <materialDesign:PackIcon Kind="ContentSaveOutline"/>
           </Button>
+          <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
           <Button Style="{StaticResource TopActionButton}" Click="Detect_Click" ToolTip="按当前参数重新识别">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="AutoFix"/><TextBlock Text="自动识别" Margin="7,0,0,0"/></StackPanel>
           </Button>
-          <Button Style="{StaticResource TopActionButton}" Click="AddRegion_Click" ToolTip="添加选框">
-            <materialDesign:PackIcon Kind="SelectionDrag"/>
-          </Button>
-          <Button Style="{StaticResource TopActionButton}" Click="DeleteRegion_Click" ToolTip="删除选框">
-            <materialDesign:PackIcon Kind="DeleteOutline"/>
-          </Button>
+          <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
           <Button Style="{StaticResource TopActionButton}" Click="Undo_Click" ToolTip="撤销 Ctrl+Z"><materialDesign:PackIcon Kind="Undo"/></Button>
           <Button Style="{StaticResource TopActionButton}" Click="Redo_Click" ToolTip="重做 Ctrl+Y"><materialDesign:PackIcon Kind="Redo"/></Button>
           <Button Style="{StaticResource TopActionButton}" Click="ConfirmTask_Click" ToolTip="标记当前任务已确认">
             <materialDesign:PackIcon Kind="CheckCircleOutline"/>
           </Button>
+          <Border Width="1" Height="24" Background="#45FFFFFF" Margin="7,0"/>
           <Button Style="{StaticResource TopActionButton}" Click="Settings_Click" ToolTip="应用设置">
             <materialDesign:PackIcon Kind="CogOutline"/>
           </Button>
-          <Button Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="12,0,0,0" Padding="18,10"
-                  Background="{DynamicResource MaterialDesign.Brush.Secondary}" Foreground="#19111A">
+          <Button Click="Export_Click" Style="{StaticResource MaterialDesignRaisedButton}" Margin="10,0,0,0" Padding="16,9"
+                  MinWidth="128" HorizontalContentAlignment="Center" Background="{DynamicResource MaterialDesign.Brush.Secondary}" Foreground="#19111A">
             <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="Export"/><TextBlock Text="导出全部" Margin="8,0,0,0" FontWeight="SemiBold"/></StackPanel>
           </Button>
         </StackPanel>
@@ -91,11 +88,14 @@
           </StackPanel>
           <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
             <CheckBox x:Name="OnlyConfirmedTasksBox" Content="仅导出已确认任务" Margin="4,3,0,8"/>
-            <UniformGrid Columns="2">
-              <Button Content="下一异常" Click="NextIssue_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,0,3,5"/>
-              <Button Content="确认无警告" Click="ConfirmSafeTasks_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="3,0,0,5"/>
-              <Button Content="重试失败任务" Click="RetryFailedTasks_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,3" Grid.ColumnSpan="2"/>
-            </UniformGrid>
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+              <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+              <Button Grid.Row="0" Grid.Column="0" Content="下一异常" Click="NextIssue_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,0,3,5"/>
+              <Button Grid.Row="0" Grid.Column="1" Content="确认无警告" Click="ConfirmSafeTasks_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="3,0,0,5"/>
+              <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="重试失败任务" Click="RetryFailedTasks_Click"
+                      Style="{StaticResource MaterialDesignOutlinedButton}" HorizontalAlignment="Stretch" Margin="0,0,0,3"/>
+            </Grid>
           </StackPanel>
           <ListBox x:Name="TaskList" Background="Transparent" BorderThickness="0" SelectionChanged="TaskList_SelectionChanged"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
@@ -121,12 +121,29 @@
               </Grid>
             </ScrollViewer>
 
+            <materialDesign:Card HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16,16,0,0"
+                                 Background="{StaticResource AppSurfaceHighBrush}" UniformCornerRadius="100" materialDesign:ElevationAssist.Elevation="Dp4">
+              <StackPanel Orientation="Horizontal" Margin="3">
+                <Button Click="AddRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="添加选框" Width="34" Height="34" Padding="7">
+                  <materialDesign:PackIcon Kind="SelectionDrag" Width="17" Height="17"/>
+                </Button>
+                <Button Click="DeleteRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="删除选框" Width="34" Height="34" Padding="7">
+                  <materialDesign:PackIcon Kind="DeleteOutline" Width="17" Height="17"/>
+                </Button>
+              </StackPanel>
+            </materialDesign:Card>
+
             <materialDesign:Card HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,16,0"
-                                 Background="{StaticResource AppSurfaceHighBrush}" UniformCornerRadius="20" materialDesign:ElevationAssist.Elevation="Dp4">
-              <StackPanel Orientation="Horizontal" Margin="4">
-                <Button Click="ZoomOut_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="缩小"><materialDesign:PackIcon Kind="Minus"/></Button>
-                <Button x:Name="ZoomTextButton" Content="100%" Click="ZoomReset_Click" Style="{StaticResource MaterialDesignFlatButton}" MinWidth="64"/>
-                <Button Click="ZoomIn_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="放大"><materialDesign:PackIcon Kind="Plus"/></Button>
+                                 Background="{StaticResource AppSurfaceHighBrush}" UniformCornerRadius="100" materialDesign:ElevationAssist.Elevation="Dp4">
+              <StackPanel Orientation="Horizontal" Margin="3">
+                <Button Click="ZoomOut_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="缩小" Width="34" Height="34" Padding="8">
+                  <materialDesign:PackIcon Kind="Minus" Width="15" Height="15"/>
+                </Button>
+                <Button x:Name="ZoomTextButton" Content="100%" Click="ZoomReset_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                        MinWidth="54" Height="34" Padding="5,0" FontSize="12"/>
+                <Button Click="ZoomIn_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="放大" Width="34" Height="34" Padding="8">
+                  <materialDesign:PackIcon Kind="Plus" Width="15" Height="15"/>
+                </Button>
               </StackPanel>
             </materialDesign:Card>
 
