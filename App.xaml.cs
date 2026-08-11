@@ -48,7 +48,7 @@ public partial class App : Application
         }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-exif-atomic")
         {
-            RunExifSmokeTest(); RunAtomicFileSmokeTest(); Shutdown(); return;
+            RunExifSmokeTest(); RunManualTransformSmokeTest(); RunAtomicFileSmokeTest(); Shutdown(); return;
         }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-export-preview")
         {
@@ -234,6 +234,22 @@ public partial class App : Application
             if (Directory.EnumerateFiles(directory, "*.tmp").Any()) throw new InvalidDataException("Atomic write left temporary files.");
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    private static void RunManualTransformSmokeTest()
+    {
+        Rect source = new(10, 20, 30, 40);
+        if (CutPic.MainWindow.TransformBounds(source, 100, 200, ImageTransformOperation.RotateRight) != new Rect(140, 10, 40, 30) ||
+            CutPic.MainWindow.TransformBounds(source, 100, 200, ImageTransformOperation.RotateLeft) != new Rect(20, 60, 40, 30) ||
+            CutPic.MainWindow.TransformBounds(source, 100, 200, ImageTransformOperation.FlipHorizontal) != new Rect(60, 20, 30, 40) ||
+            CutPic.MainWindow.TransformBounds(source, 100, 200, ImageTransformOperation.FlipVertical) != new Rect(10, 140, 30, 40))
+            throw new InvalidDataException("Manual transform crop mapping failed.");
+        var transforms = new List<ImageTransformOperation>();
+        CutPic.MainWindow.AppendTransform(transforms, ImageTransformOperation.RotateRight);
+        CutPic.MainWindow.AppendTransform(transforms, ImageTransformOperation.RotateLeft);
+        CutPic.MainWindow.AppendTransform(transforms, ImageTransformOperation.FlipHorizontal);
+        CutPic.MainWindow.AppendTransform(transforms, ImageTransformOperation.FlipHorizontal);
+        if (transforms.Count != 0) throw new InvalidDataException("Manual transform normalization failed.");
     }
 
     private static void RunTransparentSmokeTest(string inputPath, string outputDirectory,

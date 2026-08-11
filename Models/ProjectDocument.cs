@@ -2,7 +2,7 @@ namespace CutPic.Models;
 
 public sealed class ProjectDocument
 {
-    public int Version { get; set; } = 3;
+    public int Version { get; set; } = 4;
     public DateTimeOffset SavedAt { get; set; } = DateTimeOffset.Now;
     public List<ProjectTaskDocument> Tasks { get; set; } = [];
 }
@@ -16,6 +16,7 @@ public sealed class ProjectTaskDocument
     public int SliceCount { get; set; }
     public int WarningCount { get; set; }
     public string LastError { get; set; } = string.Empty;
+    public List<ImageTransformOperation> Transforms { get; set; } = [];
     public List<CropBoundsDocument> Regions { get; set; } = [];
 }
 

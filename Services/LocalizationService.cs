@@ -93,6 +93,11 @@ public static class LocalizationService
         , ["双击图片新增切割线；拖动切割线调整；选中后按 Delete 删除。"]="Double-click the image to add a divider; drag to adjust it; select it and press Delete to remove it."
         , ["在当前切片中间新增切割线"]="Add a divider at the center of the current slice"
         , ["删除选中的切割线"]="Delete the selected divider"
+        , ["向左旋转 90°"]="Rotate Left 90°", ["向右旋转 90°"]="Rotate Right 90°"
+        , ["水平翻转"]="Flip Horizontally", ["垂直翻转"]="Flip Vertically"
+        , ["图片已向左旋转 90°"]="Image rotated left 90°", ["图片已向右旋转 90°"]="Image rotated right 90°"
+        , ["图片已水平翻转"]="Image flipped horizontally", ["图片已垂直翻转"]="Image flipped vertically"
+        , ["图片已旋转，长图切片已按当前参数重新生成"]="Image rotated; long-image slices were regenerated using the current settings"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";

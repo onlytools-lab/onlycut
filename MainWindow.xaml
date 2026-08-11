@@ -134,6 +134,19 @@
                 <Button x:Name="DeleteRegionButton" Click="DeleteRegion_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="删除选框" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="DeleteOutline" Width="17" Height="17"/>
                 </Button>
+                <Border Width="1" Height="22" Background="{StaticResource DividerBrush}" Margin="3,0"/>
+                <Button Click="RotateLeft_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="向左旋转 90°" Width="34" Height="34" Padding="7">
+                  <materialDesign:PackIcon Kind="RotateLeft" Width="17" Height="17"/>
+                </Button>
+                <Button Click="RotateRight_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="向右旋转 90°" Width="34" Height="34" Padding="7">
+                  <materialDesign:PackIcon Kind="RotateRight" Width="17" Height="17"/>
+                </Button>
+                <Button Click="FlipHorizontal_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="水平翻转" Width="34" Height="34" Padding="7">
+                  <materialDesign:PackIcon Kind="FlipHorizontal" Width="17" Height="17"/>
+                </Button>
+                <Button Click="FlipVertical_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="垂直翻转" Width="34" Height="34" Padding="7">
+                  <materialDesign:PackIcon Kind="FlipVertical" Width="17" Height="17"/>
+                </Button>
               </StackPanel>
             </materialDesign:Card>
 

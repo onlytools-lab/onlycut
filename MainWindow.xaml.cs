@@ -29,16 +29,18 @@ public partial class MainWindow : Window
     private readonly record struct DetectionOptions(int Mode, double Sensitivity, int Grouping, double MinimumArea, int Padding);
     private sealed class EditHistory
     {
-        public Stack<List<RegionSnapshot>> Undo { get; } = new();
-        public Stack<List<RegionSnapshot>> Redo { get; } = new();
+        public Stack<EditSnapshot> Undo { get; } = new();
+        public Stack<EditSnapshot> Redo { get; } = new();
     }
     private readonly record struct RegionSnapshot(Rect Bounds, bool RemoveBackground);
+    private sealed record EditSnapshot(List<RegionSnapshot> Regions, List<ImageTransformOperation> Transforms);
     private List<CropRegion> _regions = [];
     private readonly List<ImageTask> _tasks = [];
     private readonly Dictionary<string, List<CropRegion>> _regionStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, EditHistory> _histories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _longModeStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _manualBackgroundColors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<ImageTransformOperation>> _imageTransforms = new(StringComparer.OrdinalIgnoreCase);
     private List<ProcessingPreset> _presets = [];
     private string _defaultPresetId = "builtin-card";
     private BitmapSource? _bitmap;
@@ -306,6 +308,7 @@ public partial class MainWindow : Window
                 ? sampled.ToString() : null,
             Status = task.Status,
             SliceCount = task.SliceCount, WarningCount = task.WarningCount, LastError = task.LastError,
+            Transforms = _imageTransforms.TryGetValue(task.Path, out var transforms) ? [.. transforms] : [],
             Regions = (_regionStates.TryGetValue(task.Path, out var regions) ? regions : [])
                 .Select(region => new CropBoundsDocument
                 {
@@ -340,7 +343,7 @@ public partial class MainWindow : Window
         var document = AtomicFileService.ReadJson<ProjectDocument>(path)
             ?? throw new InvalidDataException("项目文件内容为空或格式无效。");
         TaskList.Items.Clear(); _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
-        _manualBackgroundColors.Clear();
+        _manualBackgroundColors.Clear(); _imageTransforms.Clear();
         int missing = 0;
         foreach (var savedTask in document.Tasks)
         {
@@ -348,6 +351,7 @@ public partial class MainWindow : Window
             var task = new ImageTask(savedTask.ImagePath, System.IO.Path.GetFileName(savedTask.ImagePath))
                 { Status = savedTask.Status, SliceCount = savedTask.SliceCount, WarningCount = savedTask.WarningCount, LastError = savedTask.LastError };
             _tasks.Add(task); TaskList.Items.Add(task); _longModeStates[task.Path] = savedTask.IsLongMode;
+            _imageTransforms[task.Path] = savedTask.Transforms ?? [];
             if (!string.IsNullOrWhiteSpace(savedTask.SampledBackgroundColor))
             {
                 try { _manualBackgroundColors[task.Path] = (Color)ColorConverter.ConvertFromString(savedTask.SampledBackgroundColor)!; }
@@ -372,13 +376,10 @@ public partial class MainWindow : Window
     {
         try
         {
-            _bitmap = ImageProcessingService.LoadImage(path);
+            _bitmap = LoadTaskBitmap(path);
             _sourcePath = path;
             _selectedLongDividerIndex = -1;
-            SourceImage.Source = _bitmap;
-            EmptyState.Visibility = Visibility.Collapsed;
-            SourceImage.Width = Overlay.Width = ImageHost.Width = _bitmap.PixelWidth;
-            SourceImage.Height = Overlay.Height = ImageHost.Height = _bitmap.PixelHeight;
+            DisplayBitmap(_bitmap);
             UpdateSampledBackgroundUi();
             ImageInfoText.Text = $"{System.IO.Path.GetFileName(path)}  ·  {_bitmap.PixelWidth} × {_bitmap.PixelHeight}";
             if (_regionStates.TryGetValue(path, out var saved))
@@ -392,6 +393,90 @@ public partial class MainWindow : Window
             else DetectRegions();
         }
         catch (Exception ex) { ShowMessage( $"无法打开图片：\n{ex.Message}", "打开失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private BitmapSource LoadTaskBitmap(string path)
+    {
+        BitmapSource bitmap = ImageProcessingService.LoadImage(path);
+        if (_imageTransforms.TryGetValue(path, out var transforms))
+            foreach (ImageTransformOperation operation in transforms)
+                bitmap = ImageProcessingService.ApplyManualTransform(bitmap, operation);
+        return bitmap;
+    }
+
+    private void DisplayBitmap(BitmapSource bitmap)
+    {
+        SourceImage.Source = bitmap; EmptyState.Visibility = Visibility.Collapsed;
+        SourceImage.Width = Overlay.Width = ImageHost.Width = bitmap.PixelWidth;
+        SourceImage.Height = Overlay.Height = ImageHost.Height = bitmap.PixelHeight;
+        ImageInfoText.Text = _sourcePath is null ? $"{bitmap.PixelWidth} × {bitmap.PixelHeight}"
+            : $"{System.IO.Path.GetFileName(_sourcePath)}  ·  {bitmap.PixelWidth} × {bitmap.PixelHeight}";
+    }
+
+    private void RotateLeft_Click(object sender, RoutedEventArgs e) => ApplyImageTransform(ImageTransformOperation.RotateLeft);
+    private void RotateRight_Click(object sender, RoutedEventArgs e) => ApplyImageTransform(ImageTransformOperation.RotateRight);
+    private void FlipHorizontal_Click(object sender, RoutedEventArgs e) => ApplyImageTransform(ImageTransformOperation.FlipHorizontal);
+    private void FlipVertical_Click(object sender, RoutedEventArgs e) => ApplyImageTransform(ImageTransformOperation.FlipVertical);
+
+    private void ApplyImageTransform(ImageTransformOperation operation)
+    {
+        if (_bitmap is null || _sourcePath is null) return;
+        PushHistory();
+        int oldWidth = _bitmap.PixelWidth, oldHeight = _bitmap.PixelHeight;
+        if (!_imageTransforms.TryGetValue(_sourcePath, out var transforms))
+            _imageTransforms[_sourcePath] = transforms = [];
+        AppendTransform(transforms, operation);
+        _bitmap = ImageProcessingService.ApplyManualTransform(_bitmap, operation);
+        DisplayBitmap(_bitmap);
+
+        bool quarterTurn = operation is ImageTransformOperation.RotateLeft or ImageTransformOperation.RotateRight;
+        if (IsLongMode && quarterTurn)
+        {
+            GenerateLongSlices(false);
+            StatusText.Text = LocalizationService.Translate("图片已旋转，长图切片已按当前参数重新生成");
+            return;
+        }
+
+        foreach (CropRegion region in _regions)
+            region.Bounds = TransformBounds(region.Bounds, oldWidth, oldHeight, operation);
+        _regions = _regions.OrderBy(region => region.Bounds.Top).ThenBy(region => region.Bounds.Left).ToList();
+        RenumberRegions(); _selected = _regions.FirstOrDefault(); _selectedLongDividerIndex = -1; RenderRegions();
+        StatusText.Text = LocalizationService.Translate(operation switch
+        {
+            ImageTransformOperation.RotateLeft => "图片已向左旋转 90°",
+            ImageTransformOperation.RotateRight => "图片已向右旋转 90°",
+            ImageTransformOperation.FlipHorizontal => "图片已水平翻转",
+            _ => "图片已垂直翻转"
+        });
+    }
+
+    internal static Rect TransformBounds(Rect bounds, int width, int height, ImageTransformOperation operation) => operation switch
+    {
+        ImageTransformOperation.RotateLeft => new Rect(bounds.Top, width - bounds.Right, bounds.Height, bounds.Width),
+        ImageTransformOperation.RotateRight => new Rect(height - bounds.Bottom, bounds.Left, bounds.Height, bounds.Width),
+        ImageTransformOperation.FlipHorizontal => new Rect(width - bounds.Right, bounds.Top, bounds.Width, bounds.Height),
+        ImageTransformOperation.FlipVertical => new Rect(bounds.Left, height - bounds.Bottom, bounds.Width, bounds.Height),
+        _ => bounds
+    };
+
+    internal static void AppendTransform(List<ImageTransformOperation> transforms, ImageTransformOperation operation)
+    {
+        if (transforms.Count > 0)
+        {
+            ImageTransformOperation last = transforms[^1];
+            bool cancels = (last, operation) is
+                (ImageTransformOperation.RotateLeft, ImageTransformOperation.RotateRight) or
+                (ImageTransformOperation.RotateRight, ImageTransformOperation.RotateLeft) or
+                (ImageTransformOperation.FlipHorizontal, ImageTransformOperation.FlipHorizontal) or
+                (ImageTransformOperation.FlipVertical, ImageTransformOperation.FlipVertical);
+            if (cancels) { transforms.RemoveAt(transforms.Count - 1); return; }
+            if (last == operation && operation is ImageTransformOperation.RotateLeft or ImageTransformOperation.RotateRight &&
+                transforms.Count >= 3 && transforms[^2] == operation && transforms[^3] == operation)
+            {
+                transforms.RemoveRange(transforms.Count - 3, 3); return;
+            }
+        }
+        transforms.Add(operation);
     }
 
     private void Detect_Click(object sender, RoutedEventArgs e) => DetectRegions();
@@ -659,7 +744,7 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        var bitmap = ImageProcessingService.LoadImage(task.Path);
+                        var bitmap = LoadTaskBitmap(task.Path);
                         bool isLongTask = _longModeStates.TryGetValue(task.Path, out bool taskMode) && taskMode;
                         var regions = _regionStates.TryGetValue(task.Path, out var saved) ? saved
                             : isLongTask ? longSplitMode == 3
@@ -750,7 +835,7 @@ public partial class MainWindow : Window
                     if (token.IsCancellationRequested) break;
                     try
                     {
-                    var bitmap = ImageProcessingService.LoadImage(task.Path);
+                    var bitmap = LoadTaskBitmap(task.Path);
                     bool isLongTask = _longModeStates.TryGetValue(task.Path, out bool taskMode) && taskMode;
                     var regions = _regionStates.TryGetValue(task.Path, out var saved)
                         ? saved
@@ -1351,7 +1436,7 @@ public partial class MainWindow : Window
                 var result = new List<string>();
                 foreach (var task in checks.Where(t => !t.IsLong))
                 {
-                    var bitmap = ImageProcessingService.LoadImage(task.Path);
+                    var bitmap = LoadTaskBitmap(task.Path);
                     var regions = task.Regions ?? DetectUsingOptions(bitmap, detection).ToList();
                     foreach (var region in regions.Where(r => r.RemoveBackground))
                     {
@@ -1483,8 +1568,9 @@ public partial class MainWindow : Window
         return history;
     }
 
-    private List<RegionSnapshot> Snapshot() => _regions
-        .Select(r => new RegionSnapshot(r.Bounds, r.RemoveBackground)).ToList();
+    private EditSnapshot Snapshot() => new(
+        _regions.Select(r => new RegionSnapshot(r.Bounds, r.RemoveBackground)).ToList(),
+        _sourcePath is not null && _imageTransforms.TryGetValue(_sourcePath, out var transforms) ? [.. transforms] : []);
     private void PushHistory()
     {
         var history = CurrentHistory();
@@ -1492,11 +1578,17 @@ public partial class MainWindow : Window
         history.Undo.Push(Snapshot()); history.Redo.Clear();
     }
 
-    private void ApplySnapshot(List<RegionSnapshot> snapshot)
+    private void ApplySnapshot(EditSnapshot snapshot)
     {
-        _regions = snapshot.Select((r, i) => new CropRegion
+        _regions = snapshot.Regions.Select((r, i) => new CropRegion
             { Number = i + 1, Bounds = r.Bounds, RemoveBackground = r.RemoveBackground }).ToList();
-        if (_sourcePath is not null) _regionStates[_sourcePath] = _regions;
+        if (_sourcePath is not null)
+        {
+            _regionStates[_sourcePath] = _regions;
+            _imageTransforms[_sourcePath] = [.. snapshot.Transforms];
+            _bitmap = LoadTaskBitmap(_sourcePath);
+            DisplayBitmap(_bitmap);
+        }
         _selected = _regions.FirstOrDefault(); _selectedLongDividerIndex = -1; RenderRegions();
     }
 

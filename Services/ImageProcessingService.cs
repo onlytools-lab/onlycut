@@ -80,6 +80,16 @@ public static class ImageProcessingService
         return oriented;
     }
 
+    public static BitmapSource ApplyManualTransform(BitmapSource source, ImageTransformOperation operation) =>
+        ApplyExifOrientation(source, operation switch
+        {
+            ImageTransformOperation.RotateLeft => 8,
+            ImageTransformOperation.RotateRight => 6,
+            ImageTransformOperation.FlipHorizontal => 2,
+            ImageTransformOperation.FlipVertical => 4,
+            _ => 1
+        });
+
     public static IReadOnlyList<CropRegion> DetectCards(BitmapSource source)
     {
         int width = source.PixelWidth, height = source.PixelHeight, stride = width * 4;
