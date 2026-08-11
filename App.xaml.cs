@@ -14,9 +14,11 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        LogService.Initialize();
         DispatcherUnhandledException += (_, args) =>
         {
             WriteCrashLog(args.Exception);
+            LogService.Error("app.unhandled_exception", args.Exception);
             MessageBox.Show(LocalizationService.Translate($"CutPic 发生未处理错误，诊断日志已保存：\n{CrashLogPath}\n\n{args.Exception.Message}"),
                 LocalizationService.Translate("CutPic 启动错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
@@ -101,10 +103,17 @@ public partial class App : Application
         catch (Exception ex)
         {
             WriteCrashLog(ex);
+            LogService.Error("app.start_failed", ex);
             MessageBox.Show(LocalizationService.Translate($"CutPic 无法启动，诊断日志已保存：\n{CrashLogPath}\n\n{ex.Message}"),
                 LocalizationService.Translate("CutPic 启动错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(-1);
         }
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        LogService.Info("app.exit", $"Exit code: {e.ApplicationExitCode}");
+        base.OnExit(e);
     }
 
     private static string CrashLogPath => Path.Combine(
@@ -150,6 +159,17 @@ public partial class App : Application
             Test("Manual transform mapping", RunManualTransformSmokeTest);
             Test("Long-image divider continuity", RunLongEditSmokeTest);
             Test("Atomic write and backup recovery", RunAtomicFileSmokeTest);
+            Test("Structured logs and diagnostic package", () =>
+            {
+                LogService.Initialize();
+                string package = Path.Combine(isolatedData, "diagnostics.zip");
+                LogService.CreateDiagnosticPackage(package, new AppSettings());
+                using var archive = System.IO.Compression.ZipFile.OpenRead(package);
+                if (archive.GetEntry("system-info.txt") is null || archive.GetEntry("settings-summary.json") is null ||
+                    archive.Entries.Any(entry => entry.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                                 entry.Name.EndsWith(".cutpic", StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidDataException("Diagnostic package validation failed.");
+            });
             Test("Settings and project migration", RunMigrationSmokeTest);
             Test("Image output and thumbnail pipeline", RunImagePipelineSmokeTest);
             Test("Shortcut defaults and export naming", RunConfigurationSmokeTest);

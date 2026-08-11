@@ -103,6 +103,9 @@ public static class LocalizationService
         , ["更多操作"]="More Actions", ["打开项目"]="Open Project", ["最近项目"]="Recent Projects"
         , ["暂无最近项目"]="No Recent Projects", ["从剪贴板粘贴图片"]="Paste Image from Clipboard"
         , ["导出预检未通过"]="Export Preflight Failed", ["导出预检提醒"]="Export Preflight Warning"
+        , ["打开日志文件夹"]="Open Logs Folder", ["导出诊断包"]="Export Diagnostic Package"
+        , ["诊断包不包含用户图片或项目文件。"]="The diagnostic package does not include user images or project files."
+        , ["诊断包已导出。"]="Diagnostic package exported.", ["诊断包导出失败"]="Diagnostic Export Failed"
         , ["折叠/展开任务栏"]="Collapse/Expand Task Panel", ["折叠/展开参数栏"]="Collapse/Expand Settings Panel"
         , ["配置来自更高版本，当前版本不会覆盖该文件"]="Settings were created by a newer version and will not be overwritten"
     };

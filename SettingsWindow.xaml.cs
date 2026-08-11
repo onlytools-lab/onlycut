@@ -4,6 +4,9 @@ using CutPic.Services;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Input;
+using Microsoft.Win32;
+using System.Diagnostics;
+using System.IO;
 
 namespace CutPic;
 
@@ -163,6 +166,32 @@ public partial class SettingsWindow : Window
     }
 
     private void ResetShortcuts_Click(object sender, RoutedEventArgs e) => ResetShortcutEditor();
+
+    private void OpenLogsFolder_Click(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(LogService.LogsDirectory);
+        Process.Start(new ProcessStartInfo("explorer.exe", LogService.LogsDirectory) { UseShellExecute = true });
+    }
+
+    private void ExportDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = LocalizationService.Translate("导出诊断包"), Filter = "ZIP|*.zip", DefaultExt = ".zip",
+            FileName = $"CutPic-Diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.zip"
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            LogService.CreateDiagnosticPackage(dialog.FileName, Settings);
+            ShowMessage("诊断包已导出。", "导出完成");
+        }
+        catch (Exception ex)
+        {
+            LogService.Error("diagnostics.export_failed", ex);
+            ShowMessage($"诊断包导出失败：{ex.Message}", "导出失败");
+        }
+    }
     private void ResetShortcutEditor() => BuildShortcutEditor(ShortcutService.CreateDefaults());
 
     private void FontFamilyBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
