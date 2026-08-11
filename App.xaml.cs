@@ -41,6 +41,16 @@ public partial class App : Application
         {
             var window = new MainWindow(); window.Show(); window.Close(); Shutdown(); return;
         }
+        if (e.Args.Length >= 1 && e.Args[0] == "--smoke-export-preview")
+        {
+            LocalizationService.SetLanguage(e.Args.Length >= 2 ? e.Args[1] : "zh-CN");
+            var pixel = new byte[] { 255, 255, 255, 255 };
+            var image = System.Windows.Media.Imaging.BitmapSource.Create(1, 1, 96, 96,
+                System.Windows.Media.PixelFormats.Bgra32, null, pixel, 4); image.Freeze();
+            var item = new CutPic.Models.ExportPreviewItem { SourcePath="smoke.png", SourceName="smoke.png",
+                FileName="smoke_01.png", RegionIndex=0, RegionNumber=1, Thumbnail=image, Detail="Transparent PNG" };
+            var window = new ExportPreviewWindow([item]); window.Show(); window.Close(); Shutdown(); return;
+        }
         if (e.Args.Length >= 3 && (e.Args[0] == "--smoke" || e.Args[0] == "--smoke-objects"))
         {
             RunSmokeTest(e.Args[1], e.Args[2], e.Args[0] == "--smoke-objects");

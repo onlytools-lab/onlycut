@@ -238,6 +238,15 @@ public static class ImageProcessingService
         return crop;
     }
 
+    public static BitmapSource CreateThumbnail(BitmapSource source, Rect requestedBounds, int maximumSide)
+    {
+        BitmapSource crop = CreateCrop(source, requestedBounds);
+        double scale = maximumSide / (double)Math.Max(crop.PixelWidth, crop.PixelHeight);
+        if (scale >= 1) return crop;
+        var thumbnail = new TransformedBitmap(crop, new ScaleTransform(scale, scale));
+        thumbnail.Freeze(); return thumbnail;
+    }
+
     public static BitmapSource CreateTransparentSquare(BitmapSource source, Rect requestedBounds,
         int outputSize, int tolerance, int feather,
         TransparencyBackgroundSource backgroundSource = TransparencyBackgroundSource.Automatic,

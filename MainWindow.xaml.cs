@@ -596,6 +596,74 @@ public partial class MainWindow : Window
             ? Math.Clamp(parsedDigits, 1, 8) : 2;
         bool createSourceSubfolder = CreateSourceSubfolderBox.IsChecked == true;
         bool openFolderAfterExport = OpenFolderAfterExportBox.IsChecked == true;
+        HashSet<string> selectedPreviewKeys;
+        try
+        {
+            WorkspaceGrid.IsEnabled = false; AppBarActions.IsEnabled = false;
+            StatusText.Text = "正在生成导出总览……";
+            var previewItems = await Task.Run(() =>
+            {
+                var items = new List<ExportPreviewItem>();
+                foreach (var task in _tasks)
+                {
+                    try
+                    {
+                        var bitmap = ImageProcessingService.LoadImage(task.Path);
+                        bool isLongTask = _longModeStates.TryGetValue(task.Path, out bool taskMode) && taskMode;
+                        var regions = _regionStates.TryGetValue(task.Path, out var saved) ? saved
+                            : isLongTask ? longSplitMode == 3
+                                ? ImageProcessingService.SuggestLongImageSlices(bitmap, smartTargetHeight, smartSearchRange)
+                                : BuildLongRegions(bitmap.PixelWidth, bitmap.PixelHeight, longSplitMode, longCount, longFixedHeight, longCustomHeights)
+                            : DetectUsingOptions(bitmap, detectionOptions).ToList();
+                        string baseName = System.IO.Path.GetFileNameWithoutExtension(task.Path);
+                        string taskDirectory = createSourceSubfolder ? System.IO.Path.Combine(exportDirectory, SanitizeFileName(baseName, "图片")) : exportDirectory;
+                        var validationWarnings = ValidateRegions(bitmap, regions, isLongTask);
+                        for (int i = 0; i < regions.Count; i++)
+                        {
+                            var region = regions[i];
+                            BitmapSource thumbnail = isLongTask ? ImageProcessingService.CreateThumbnail(bitmap, region.Bounds, 180)
+                                : transparentBackground && region.RemoveBackground
+                                    ? ImageProcessingService.CreateTransparentSquare(bitmap, region.Bounds, 180, transparencyTolerance, transparencyFeather,
+                                        transparencyBackgroundSource, _manualBackgroundColors.TryGetValue(task.Path, out Color sampled) ? sampled : null)
+                                    : ImageProcessingService.CreateSquare(bitmap, region.Bounds, 180, autoBackground, Colors.White);
+                            string fileName = BuildExportFileName(baseName, isLongTask, i, extension, namingMode, namingPrefix, namingSuffix, namingStart, namingDigits);
+                            string requestedPath = System.IO.Path.Combine(taskDirectory, fileName);
+                            var warnings = new List<string>();
+                            warnings.AddRange(validationWarnings);
+                            if (File.Exists(requestedPath)) warnings.Add(conflictPolicy switch { 1 => "同名文件将被覆盖", 2 => "同名文件将被跳过", _ => "同名文件将自动改名" });
+                            string displayFileName = System.IO.Path.GetFileName(ResolveOutputPath(requestedPath, conflictPolicy) ?? requestedPath);
+                            if (transparentBackground && region.RemoveBackground && !isLongTask)
+                            {
+                                var alpha = ImageProcessingService.AnalyzeAlpha(thumbnail);
+                                if (alpha.Clear < .04) warnings.Add("几乎没有移除背景");
+                                else if (alpha.Clear > .94) warnings.Add("透明区域过多");
+                                else if (alpha.Partial > .22) warnings.Add("半透明边缘较多");
+                            }
+                            items.Add(new ExportPreviewItem { SourcePath=task.Path, SourceName=task.Name, RegionIndex=i,
+                                RegionNumber=region.Number, FileName=displayFileName, Thumbnail=thumbnail,
+                                Detail=LocalizationService.Translate(isLongTask ? $"{Math.Round(region.Bounds.Width)} × {Math.Round(region.Bounds.Height)}"
+                                    : transparentBackground && region.RemoveBackground ? "透明 PNG" : "保留背景"),
+                                Warning=LocalizationService.Translate(string.Join("；", warnings)) });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        items.Add(new ExportPreviewItem { SourcePath=task.Path, SourceName=task.Name, RegionIndex=-1,
+                            RegionNumber=0, FileName=task.Name, IsSelected=false, Warning=LocalizationService.Translate($"无法生成预览：{ex.Message}") });
+                    }
+                }
+                return items;
+            });
+            var previewDialog = new ExportPreviewWindow(previewItems) { Owner = this };
+            WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
+            if (previewDialog.ShowDialog() != true) { StatusText.Text = "已取消导出"; return; }
+            selectedPreviewKeys = previewDialog.SelectedKeys;
+        }
+        catch (Exception ex)
+        {
+            WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
+            ShowMessage($"无法生成导出总览：\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return;
+        }
         _isExporting = true;
         _exportCancellation = new CancellationTokenSource();
         var token = _exportCancellation.Token;
@@ -649,6 +717,8 @@ public partial class MainWindow : Window
                     for (int i = 0; i < regions.Count; i++)
                     {
                         if (token.IsCancellationRequested) break;
+                        string previewKey = $"{task.Path}\0{i}";
+                        if (!selectedPreviewKeys.Contains(previewKey)) { skipped++; completed++; continue; }
                         progress.Report(new ExportProgressInfo(completed, estimatedTotal, task.Name));
                         try
                         {

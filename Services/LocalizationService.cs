@@ -63,6 +63,13 @@ public static class LocalizationService
         ["已存在同名预设，是否覆盖？"]="A preset with this name already exists. Overwrite it?", ["覆盖预设"]="Overwrite Preset", ["预设已保存"]="Preset saved",
         ["内置预设不能删除。"]="Built-in presets cannot be deleted.", ["无法删除预设"]="Cannot Delete Preset", ["确定删除预设"]="Delete preset", ["删除预设"]="Delete Preset",
         ["默认预设已设为"]="Default preset set to"
+        , ["导出前总览"]="Export Preview", ["全选"]="Select All", ["全部取消"]="Select None", ["仅选择无警告项"]="Select Items without Warnings",
+        ["返回"]="Back", ["确认并导出"]="Confirm and Export", ["请至少选择一个切片。"]="Select at least one slice.",
+        ["正在生成导出总览……"]="Generating export preview…", ["已取消导出"]="Export cancelled", ["无法生成导出总览"]="Could not generate export preview",
+        ["共"]="Total ", ["个切片"]=" slices", ["已选择"]="Selected ", ["个"]=" item(s)", ["警告"]="Warnings ",
+        ["同名文件将被覆盖"]="Existing file will be overwritten", ["同名文件将被跳过"]="Existing file will be skipped", ["同名文件将自动改名"]="File will be automatically renamed",
+        ["透明 PNG"]="Transparent PNG", ["无法生成预览"]="Could not generate preview", ["几乎没有移除背景"]="Almost no background removed",
+        ["透明区域过多"]="Too much transparent area", ["半透明边缘较多"]="Too many semi-transparent edges"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";
