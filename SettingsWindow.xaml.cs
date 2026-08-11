@@ -33,6 +33,7 @@ public partial class SettingsWindow : Window
             "HarmonyOS Sans SC" => 5, _ => 0
         };
         LanguageBox.SelectedIndex = settings.LanguageCode == "en-US" ? 1 : 0;
+        AppVersionText.Text = $"版本 {typeof(SettingsWindow).Assembly.GetName().Version?.ToString(3) ?? "1.0.0"}";
         BuildShortcutEditor(ShortcutService.MergeWithDefaults(settings.Shortcuts));
         UpdateNamingMode();
         LocalizationService.Apply(this);
@@ -95,20 +96,31 @@ public partial class SettingsWindow : Window
 
     private void Reset_Click(object sender, RoutedEventArgs e)
     {
-        ConflictPolicyBox.SelectedIndex = 0;
-        QualitySlider.Value = 92;
-        CreateSourceSubfolderBox.IsChecked = false;
-        OpenFolderAfterExportBox.IsChecked = true;
-        NamingModeBox.SelectedIndex = 0;
-        NamingPrefixBox.Text = string.Empty;
-        NamingSuffixBox.Text = string.Empty;
-        NamingStartNumberBox.Text = "1";
-        NamingDigitsBox.SelectedIndex = 0;
-        AutoRestoreBox.IsChecked = true;
-        AutoSaveIntervalBox.Text = "15";
-        FontFamilyBox.SelectedIndex = 0;
-        LanguageBox.SelectedIndex = 0;
-        ResetShortcutEditor();
+        switch (SettingsNavigation.SelectedIndex)
+        {
+            case 0:
+                ConflictPolicyBox.SelectedIndex = 0; QualitySlider.Value = 92;
+                CreateSourceSubfolderBox.IsChecked = false; OpenFolderAfterExportBox.IsChecked = true;
+                NamingModeBox.SelectedIndex = 0; NamingPrefixBox.Text = string.Empty; NamingSuffixBox.Text = string.Empty;
+                NamingStartNumberBox.Text = "1"; NamingDigitsBox.SelectedIndex = 0;
+                break;
+            case 1:
+                AutoRestoreBox.IsChecked = true; AutoSaveIntervalBox.Text = "15";
+                break;
+            case 2:
+                ResetShortcutEditor();
+                break;
+            case 3:
+                FontFamilyBox.SelectedIndex = 0; LanguageBox.SelectedIndex = 0;
+                break;
+        }
+    }
+
+    private void SettingsNavigation_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ExportSettingsPage is null) return;
+        FrameworkElement[] pages = [ExportSettingsPage, WorkspaceSettingsPage, ShortcutSettingsPage, AppearanceSettingsPage, AboutSettingsPage];
+        for (int i = 0; i < pages.Length; i++) pages[i].Visibility = i == SettingsNavigation.SelectedIndex ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void BuildShortcutEditor(IReadOnlyDictionary<string, string> values)

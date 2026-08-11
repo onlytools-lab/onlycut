@@ -79,7 +79,10 @@ public static class LocalizationService
         ["点击后按下新的快捷键"]="Click and press a new shortcut", ["快捷键冲突"]="Shortcut Conflict",
         ["已分配给多个操作"]="is assigned to multiple actions", ["恢复 100%"]="Reset to 100%",
         ["确认当前任务"]="Confirm Current Task", ["打开设置"]="Open Settings", ["新增选框"]="Add Region",
-        ["导入文件夹"]="Import Folder", ["保存项目"]="Save Project", ["下一异常"]="Next Issue"
+        ["导入文件夹"]="Import Folder", ["保存项目"]="Save Project", ["下一异常"]="Next Issue",
+        ["导出与命名"]="Export & Naming", ["外观与语言"]="Appearance & Language", ["关于"]="About",
+        ["关于 CutPic"]="About CutPic", ["版本"]="Version",
+        ["轻量的智能宫格、素材与长图切分工具"]="A lightweight tool for smart grids, assets, and long-image slicing"
     };
 
     public static void SetLanguage(string? code) => LanguageCode = code == "en-US" ? "en-US" : "zh-CN";
