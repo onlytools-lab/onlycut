@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using CutPic.Services;
 using System.IO;
 using System.Text;
@@ -44,6 +45,10 @@ public partial class App : Application
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-long-edit")
         {
             RunLongEditSmokeTest(); Shutdown(); return;
+        }
+        if (e.Args.Length >= 1 && e.Args[0] == "--smoke-exif-atomic")
+        {
+            RunExifSmokeTest(); RunAtomicFileSmokeTest(); Shutdown(); return;
         }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-export-preview")
         {
@@ -170,6 +175,65 @@ public partial class App : Application
             y = region.Bounds.Bottom;
         }
         if (Math.Abs(y - height) > .01) throw new InvalidDataException("Long divider total height changed.");
+    }
+
+    private static void RunExifSmokeTest()
+    {
+        byte[] pixels = new byte[2 * 3 * 4];
+        for (int i = 0; i < 6; i++) { pixels[i * 4] = (byte)(i + 1); pixels[i * 4 + 3] = 255; }
+        var source = BitmapSource.Create(2, 3, 96, 96, PixelFormats.Bgra32, null, pixels, 8); source.Freeze();
+        AssertOrientation(2, 2, 3, [2, 1, 4, 3, 6, 5]);
+        AssertOrientation(3, 2, 3, [6, 5, 4, 3, 2, 1]);
+        AssertOrientation(4, 2, 3, [5, 6, 3, 4, 1, 2]);
+        AssertOrientation(5, 3, 2, [1, 3, 5, 2, 4, 6]);
+        AssertOrientation(6, 3, 2, [5, 3, 1, 6, 4, 2]);
+        AssertOrientation(7, 3, 2, [6, 4, 2, 5, 3, 1]);
+        AssertOrientation(8, 3, 2, [2, 4, 6, 1, 3, 5]);
+
+        string directory = Path.Combine(Path.GetTempPath(), $"CutPicExifSmoke-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string path = Path.Combine(directory, "orientation-6.jpg");
+            var larger = new TransformedBitmap(source, new ScaleTransform(10, 10)); larger.Freeze();
+            var metadata = new BitmapMetadata("jpg");
+            metadata.SetQuery("/app1/ifd/{ushort=274}", (ushort)6);
+            var encoder = new JpegBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(larger, null, metadata, null));
+            using (var stream = File.Create(path)) encoder.Save(stream);
+            BitmapSource loaded = ImageProcessingService.LoadImage(path);
+            if (loaded.PixelWidth != 30 || loaded.PixelHeight != 20)
+                throw new InvalidDataException("JPEG EXIF orientation metadata was not applied.");
+        }
+        finally { Directory.Delete(directory, true); }
+
+        void AssertOrientation(ushort orientation, int width, int height, byte[] expected)
+        {
+            BitmapSource result = ImageProcessingService.ApplyExifOrientation(source, orientation);
+            if (result.PixelWidth != width || result.PixelHeight != height) throw new InvalidDataException($"EXIF {orientation} dimensions failed.");
+            var actual = new byte[width * height * 4]; result.CopyPixels(actual, width * 4, 0);
+            for (int i = 0; i < expected.Length; i++)
+                if (actual[i * 4] != expected[i]) throw new InvalidDataException($"EXIF {orientation} pixel mapping failed at {i}.");
+        }
+    }
+
+    private static void RunAtomicFileSmokeTest()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"CutPicAtomicSmoke-{Guid.NewGuid():N}");
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            AtomicFileService.WriteJson(path, new Dictionary<string, int> { ["Value"] = 1 });
+            AtomicFileService.WriteJson(path, new Dictionary<string, int> { ["Value"] = 2 });
+            var current = AtomicFileService.ReadJson<Dictionary<string, int>>(path);
+            var backup = AtomicFileService.ReadJson<Dictionary<string, int>>(AtomicFileService.BackupPath(path));
+            if (current?["Value"] != 2 || backup?["Value"] != 1) throw new InvalidDataException("Atomic write or backup failed.");
+            File.WriteAllText(path, "{");
+            var recovered = AtomicFileService.ReadJson<Dictionary<string, int>>(path);
+            if (recovered?["Value"] != 1) throw new InvalidDataException("Atomic backup recovery failed.");
+            if (Directory.EnumerateFiles(directory, "*.tmp").Any()) throw new InvalidDataException("Atomic write left temporary files.");
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
 
     private static void RunTransparentSmokeTest(string inputPath, string outputDirectory,

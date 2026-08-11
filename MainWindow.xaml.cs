@@ -9,7 +9,6 @@ using System.Windows.Shapes;
 using CutPic.Models;
 using CutPic.Services;
 using System.IO;
-using System.Text.Json;
 using System.Windows.Threading;
 using System.Diagnostics;
 
@@ -319,8 +318,7 @@ public partial class MainWindow : Window
 
     private void SaveProjectDocument(string path)
     {
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(BuildProjectDocument(), new JsonSerializerOptions { WriteIndented = true }));
+        AtomicFileService.WriteJson(path, BuildProjectDocument());
     }
 
     private void SaveRecoveryProject()
@@ -331,7 +329,7 @@ public partial class MainWindow : Window
         if (_tasks.Count > 0 || !File.Exists(RecoveryProjectPath)) return;
         try
         {
-            var document = JsonSerializer.Deserialize<ProjectDocument>(File.ReadAllText(RecoveryProjectPath));
+            var document = AtomicFileService.ReadJson<ProjectDocument>(RecoveryProjectPath);
             if (document?.Tasks.Count > 0) LoadProjectDocument(RecoveryProjectPath, true);
         }
         catch { }
@@ -339,7 +337,7 @@ public partial class MainWindow : Window
 
     private void LoadProjectDocument(string path, bool isRecovery = false)
     {
-        var document = JsonSerializer.Deserialize<ProjectDocument>(File.ReadAllText(path))
+        var document = AtomicFileService.ReadJson<ProjectDocument>(path)
             ?? throw new InvalidDataException("项目文件内容为空或格式无效。");
         TaskList.Items.Clear(); _tasks.Clear(); _regionStates.Clear(); _longModeStates.Clear(); _histories.Clear();
         _manualBackgroundColors.Clear();
@@ -1617,7 +1615,7 @@ public partial class MainWindow : Window
         try
         {
             if (!File.Exists(SettingsPath)) return;
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath));
+            var settings = AtomicFileService.ReadJson<AppSettings>(SettingsPath);
             if (settings is null) return;
             SizeBox.SelectedIndex = Math.Clamp(settings.OutputSizeIndex, 0, SizeBox.Items.Count - 1);
             FormatBox.SelectedIndex = Math.Clamp(settings.FormatIndex, 0, FormatBox.Items.Count - 1);
@@ -1703,7 +1701,7 @@ public partial class MainWindow : Window
                 LongCustomHeights = LongCustomHeightsBox.Text,
                 SmartTargetHeight = SmartTargetHeightBox.Text, SmartSearchRange = SmartSearchRangeBox.Text
             };
-            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+            AtomicFileService.WriteJson(SettingsPath, settings);
         }
         catch { }
     }

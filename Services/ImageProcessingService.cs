@@ -15,15 +15,69 @@ public static class ImageProcessingService
         using var stream = File.OpenRead(path);
         var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat,
             BitmapCacheOption.OnLoad);
-        var source = decoder.Frames[0];
+        var frame = decoder.Frames[0];
+        ushort orientation = ReadExifOrientation(frame);
+        BitmapSource source = frame;
         if (source.Format != PixelFormats.Bgra32)
         {
             var converted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
             converted.Freeze();
-            return converted;
+            source = converted;
         }
         source.Freeze();
-        return source;
+        return ApplyExifOrientation(source, orientation);
+    }
+
+    private static ushort ReadExifOrientation(BitmapFrame frame)
+    {
+        if (frame.Metadata is not BitmapMetadata metadata) return 1;
+        foreach (string query in new[] { "/app1/ifd/{ushort=274}", "/ifd/{ushort=274}" })
+        {
+            try
+            {
+                object? value = metadata.GetQuery(query);
+                if (value is not null)
+                {
+                    ushort orientation = Convert.ToUInt16(value);
+                    if (orientation is >= 1 and <= 8) return orientation;
+                }
+            }
+            catch (Exception ex) when (ex is NotSupportedException or ArgumentException or FormatException or OverflowException) { }
+        }
+        return 1;
+    }
+
+    internal static BitmapSource ApplyExifOrientation(BitmapSource source, ushort orientation)
+    {
+        if (orientation is <= 1 or > 8) { source.Freeze(); return source; }
+        int width = source.PixelWidth, height = source.PixelHeight, sourceStride = width * 4;
+        var input = new byte[sourceStride * height];
+        source.CopyPixels(input, sourceStride, 0);
+        bool swapDimensions = orientation is >= 5 and <= 8;
+        int outputWidth = swapDimensions ? height : width, outputHeight = swapDimensions ? width : height;
+        int outputStride = outputWidth * 4;
+        var output = new byte[outputStride * outputHeight];
+        for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+        {
+            (int ox, int oy) = orientation switch
+            {
+                2 => (width - 1 - x, y),
+                3 => (width - 1 - x, height - 1 - y),
+                4 => (x, height - 1 - y),
+                5 => (y, x),
+                6 => (height - 1 - y, x),
+                7 => (height - 1 - y, width - 1 - x),
+                8 => (y, width - 1 - x),
+                _ => (x, y)
+            };
+            Buffer.BlockCopy(input, y * sourceStride + x * 4, output, oy * outputStride + ox * 4, 4);
+        }
+        double dpiX = swapDimensions ? source.DpiY : source.DpiX;
+        double dpiY = swapDimensions ? source.DpiX : source.DpiY;
+        var oriented = BitmapSource.Create(outputWidth, outputHeight, dpiX, dpiY, PixelFormats.Bgra32, null, output, outputStride);
+        oriented.Freeze();
+        return oriented;
     }
 
     public static IReadOnlyList<CropRegion> DetectCards(BitmapSource source)

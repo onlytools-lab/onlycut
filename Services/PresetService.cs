@@ -1,5 +1,4 @@
 using System.IO;
-using System.Text.Json;
 using CutPic.Models;
 
 namespace CutPic.Services;
@@ -13,7 +12,7 @@ public static class PresetService
         {
             if (File.Exists(path))
             {
-                var custom = JsonSerializer.Deserialize<List<ProcessingPreset>>(File.ReadAllText(path)) ?? [];
+                var custom = AtomicFileService.ReadJson<List<ProcessingPreset>>(path) ?? [];
                 foreach (var preset in custom.Where(p => !string.IsNullOrWhiteSpace(p.Name)))
                 {
                     preset.IsBuiltIn = false;
@@ -28,9 +27,7 @@ public static class PresetService
 
     public static void Save(string path, IEnumerable<ProcessingPreset> presets)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(presets.Where(p => !p.IsBuiltIn),
-            new JsonSerializerOptions { WriteIndented = true }));
+        AtomicFileService.WriteJson(path, presets.Where(p => !p.IsBuiltIn).ToList());
     }
 
     private static List<ProcessingPreset> BuiltIns() =>
