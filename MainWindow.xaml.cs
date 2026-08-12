@@ -310,15 +310,21 @@ public partial class MainWindow : Window
         if (_tasks.Count == 0 && _presets.FirstOrDefault(p => p.Id == _defaultPresetId) is { } defaultPreset)
             ApplyPresetParameters(defaultPreset, false);
         ImageTask? firstAdded = null;
-        foreach (string path in paths.Where(File.Exists))
+        int missing = 0, unsupported = 0;
+        string[] supportedExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".webp"];
+        foreach (string path in paths)
         {
+            if (!File.Exists(path)) { missing++; continue; }
+            if (!supportedExtensions.Contains(System.IO.Path.GetExtension(path), StringComparer.OrdinalIgnoreCase)) { unsupported++; continue; }
             if (_tasks.Any(t => string.Equals(t.Path, path, StringComparison.OrdinalIgnoreCase))) continue;
             var task = new ImageTask(path, System.IO.Path.GetFileName(path));
             _longModeStates[path] = IsLongMode;
             _tasks.Add(task); QueueThumbnail(task); firstAdded ??= task;
         }
         if (firstAdded is not null) TaskList.SelectedItem = firstAdded;
-        RefreshTaskList(); StatusText.Text = $"任务队列中共有 {_tasks.Count} 张图片";
+        RefreshTaskList();
+        StatusText.Text = $"任务队列中共有 {_tasks.Count} 张图片" +
+            (missing + unsupported > 0 ? $"；已跳过 {missing} 个不存在文件、{unsupported} 个不支持格式" : string.Empty);
     }
 
     private async void QueueThumbnail(ImageTask task)
@@ -335,7 +341,13 @@ public partial class MainWindow : Window
             });
             if (_tasks.Contains(task)) task.Thumbnail = thumbnail;
         }
-        catch { task.Thumbnail = null; }
+        catch (Exception ex)
+        {
+            task.Thumbnail = null; task.Status = "异常"; task.WarningCount = Math.Max(1, task.WarningCount);
+            task.LastError = UserErrorService.Describe(ex, task.Path);
+            UserErrorService.Log("image.thumbnail_failed", ex, task.Path);
+            RefreshTaskList();
+        }
     }
 
     private bool FilterTask(object item)
@@ -559,7 +571,14 @@ public partial class MainWindow : Window
             else if (IsLongMode) GenerateLongSlices(false);
             else DetectRegions();
         }
-        catch (Exception ex) { ShowMessage( $"无法打开图片：\n{ex.Message}", "打开失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex)
+        {
+            if (TaskList.SelectedItem is ImageTask task)
+            { task.Status = "异常"; task.WarningCount = Math.Max(1, task.WarningCount); task.LastError = UserErrorService.Describe(ex, path); }
+            UserErrorService.Log("image.open_failed", ex, path);
+            ShowMessage($"无法打开图片：\n{UserErrorService.Describe(ex, path)}", "打开失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            RefreshTaskList();
+        }
     }
 
     private BitmapSource LoadTaskBitmap(string path)
@@ -666,7 +685,11 @@ public partial class MainWindow : Window
                 ? $"已自动识别 {_regions.Count} 个切片区域，可拖动、缩放或调整识别参数"
                 : "没有识别到元素，请提高灵敏度、调整合并距离或手动添加选框";
         }
-        catch (Exception ex) { StatusText.Text = $"识别失败：{ex.Message}"; }
+        catch (Exception ex)
+        {
+            UserErrorService.Log("image.detect_failed", ex, _sourcePath);
+            StatusText.Text = $"识别失败：{UserErrorService.Describe(ex, _sourcePath).Split('\n')[0]}";
+        }
     }
 
     private void RenderRegions(bool updatePreview = true)

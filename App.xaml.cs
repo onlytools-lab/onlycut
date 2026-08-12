@@ -170,6 +170,13 @@ public partial class App : Application
                                                  entry.Name.EndsWith(".cutpic", StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidDataException("Diagnostic package validation failed.");
             });
+            Test("Actionable error messages", () =>
+            {
+                if (!UserErrorService.Describe(new UnauthorizedAccessException(), "x.png").Contains("访问权限") ||
+                    !UserErrorService.Describe(new PathTooLongException()).Contains("路径过长") ||
+                    !UserErrorService.Describe(new InvalidDataException()).Contains("损坏"))
+                    throw new InvalidDataException("Friendly error classification failed.");
+            });
             Test("Settings and project migration", RunMigrationSmokeTest);
             Test("Image output and thumbnail pipeline", RunImagePipelineSmokeTest);
             Test("Shortcut defaults and export naming", RunConfigurationSmokeTest);
