@@ -19,4 +19,9 @@
   <ItemGroup>
     <PackageReference Include="MaterialDesignThemes" Version="5.3.2" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
+    <EmbeddedResource Remove="tests\**\*" />
+    <None Remove="tests\**\*" />
+  </ItemGroup>
 </Project>
