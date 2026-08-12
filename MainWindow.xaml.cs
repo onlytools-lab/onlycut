@@ -121,6 +121,7 @@ public partial class MainWindow : Window
         UpdateShortcutToolTips();
         ApplyFontFamily();
         UpdateResponsiveToolbar();
+        UpdateCommandStates();
         StatusText.LayoutUpdated += (_, _) =>
         {
             string translated = LocalizationService.Translate(StatusText.Text);
@@ -387,16 +388,37 @@ public partial class MainWindow : Window
         _taskView.Refresh();
         if (TaskFilterCountText is not null)
             TaskFilterCountText.Text = $"{_taskView.Cast<object>().Count()} / {_tasks.Count}";
-        if (selected is not null && _taskView.Contains(selected)) return;
+        if (selected is not null && _taskView.Contains(selected)) { UpdateCommandStates(); return; }
         if (_taskView.Cast<ImageTask>().FirstOrDefault() is { } first)
         {
             TaskList.SelectedItem = first;
+            UpdateCommandStates();
             return;
         }
         TaskList.SelectedItem = null;
         _bitmap = null; _sourcePath = null; _regions = []; _selected = null;
         SourceImage.Source = null; Overlay.Children.Clear(); OutputPreview.Source = null;
         EmptyState.Visibility = Visibility.Visible; ImageInfoText.Text = string.Empty;
+        UpdateCommandStates();
+    }
+
+    private void UpdateCommandStates()
+    {
+        if (RemoveTaskButton is null) return;
+        bool hasTasks = _tasks.Count > 0;
+        bool hasImage = _bitmap is not null && _sourcePath is not null;
+        bool hasRegion = _selected is not null;
+        bool busy = _isExporting;
+        RemoveTaskButton.IsEnabled = !busy && TaskList.SelectedItem is ImageTask;
+        DetectButton.IsEnabled = !busy && hasImage;
+        AddRegionButton.IsEnabled = !busy && hasImage;
+        DeleteRegionButton.IsEnabled = !busy && hasRegion && (!IsLongMode || _regions.Count > 1);
+        RotateLeftButton.IsEnabled = RotateRightButton.IsEnabled = !busy && hasImage;
+        FlipHorizontalButton.IsEnabled = FlipVerticalButton.IsEnabled = !busy && hasImage;
+        ConfirmTaskButton.IsEnabled = !busy && TaskList.SelectedItem is ImageTask;
+        ExportAllButton.IsEnabled = !busy && hasTasks;
+        UndoButton.IsEnabled = !busy && CurrentHistory()?.Undo.Count > 0;
+        RedoButton.IsEnabled = !busy && CurrentHistory()?.Redo.Count > 0;
     }
 
     private void SaveProject_Click(object sender, RoutedEventArgs e)
@@ -763,6 +785,7 @@ public partial class MainWindow : Window
         }
         _suppressRegionBackgroundChange = false;
         if (updatePreview) UpdateOutputPreview();
+        UpdateCommandStates();
     }
 
     private void Region_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1126,6 +1149,7 @@ public partial class MainWindow : Window
             _exportCancellation?.Dispose(); _exportCancellation = null; _isExporting = false;
             WorkspaceGrid.IsEnabled = true; AppBarActions.IsEnabled = true;
             ExportProgressPanel.Visibility = Visibility.Collapsed;
+            UpdateCommandStates();
         }
     }
 
@@ -1859,6 +1883,7 @@ public partial class MainWindow : Window
         var history = CurrentHistory();
         if (history is null) return;
         history.Undo.Push(Snapshot()); history.Redo.Clear();
+        UpdateCommandStates();
     }
 
     private void ApplySnapshot(EditSnapshot snapshot)

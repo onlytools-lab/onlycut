@@ -5,7 +5,8 @@
         Title="CutPic · 智能切图" Width="1500" Height="920" MinWidth="960" MinHeight="560"
         Background="{StaticResource AppCanvasBrush}"
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
-        AllowDrop="True" Drop="Window_Drop" DragOver="Window_DragOver">
+        AllowDrop="True" Drop="Window_Drop" DragOver="Window_DragOver"
+        KeyboardNavigation.TabNavigation="Cycle">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="64"/>
@@ -96,8 +97,8 @@
             <DockPanel Margin="4,4,4,12" LastChildFill="False">
               <TextBlock Text="图片任务" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
               <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Click="Open_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="添加任务"><materialDesign:PackIcon Kind="Plus"/></Button>
-                <Button Click="RemoveTask_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="移除任务"><materialDesign:PackIcon Kind="Close"/></Button>
+                <Button Click="Open_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="添加任务" AutomationProperties.Name="添加任务"><materialDesign:PackIcon Kind="Plus"/></Button>
+                <Button x:Name="RemoveTaskButton" Click="RemoveTask_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="移除任务" AutomationProperties.Name="移除任务"><materialDesign:PackIcon Kind="Close"/></Button>
               </StackPanel>
             </DockPanel>
             <Border Background="#15FFFFFF" CornerRadius="8" Padding="10,8" Margin="0,0,0,12">
@@ -194,16 +195,16 @@
                   <materialDesign:PackIcon Kind="DeleteOutline" Width="17" Height="17"/>
                 </Button>
                 <Border Width="1" Height="22" Background="{StaticResource DividerBrush}" Margin="3,0"/>
-                <Button Click="RotateLeft_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="向左旋转 90°" Width="34" Height="34" Padding="7">
+                <Button x:Name="RotateLeftButton" Click="RotateLeft_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="向左旋转 90°" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="RotateLeft" Width="17" Height="17"/>
                 </Button>
-                <Button Click="RotateRight_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="向右旋转 90°" Width="34" Height="34" Padding="7">
+                <Button x:Name="RotateRightButton" Click="RotateRight_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="向右旋转 90°" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="RotateRight" Width="17" Height="17"/>
                 </Button>
-                <Button Click="FlipHorizontal_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="水平翻转" Width="34" Height="34" Padding="7">
+                <Button x:Name="FlipHorizontalButton" Click="FlipHorizontal_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="水平翻转" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="FlipHorizontal" Width="17" Height="17"/>
                 </Button>
-                <Button Click="FlipVertical_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="垂直翻转" Width="34" Height="34" Padding="7">
+                <Button x:Name="FlipVerticalButton" Click="FlipVertical_Click" Style="{StaticResource MaterialDesignIconButton}" ToolTip="垂直翻转" Width="34" Height="34" Padding="7">
                   <materialDesign:PackIcon Kind="FlipVertical" Width="17" Height="17"/>
                 </Button>
               </StackPanel>

@@ -199,7 +199,8 @@ public partial class App : Application
                 var main = new MainWindow { Width = 960, Height = 560 };
                 main.ApplyResponsiveToolbarForWidth(960);
                 if (main.MinWidth > 960 || main.MinHeight > 560 || main.MoreActionsButton.Visibility != Visibility.Visible ||
-                    main.ExportAllButtonText.Visibility != Visibility.Collapsed || main.AppSubtitleText.Visibility != Visibility.Collapsed)
+                    main.ExportAllButtonText.Visibility != Visibility.Collapsed || main.AppSubtitleText.Visibility != Visibility.Collapsed ||
+                    main.DetectButton.IsEnabled || main.ExportAllButton.IsEnabled || main.RemoveTaskButton.IsEnabled)
                     throw new InvalidDataException($"Compact main-window layout failed: more={main.MoreActionsButton.Visibility}, exportText={main.ExportAllButtonText.Visibility}, subtitle={main.AppSubtitleText.Visibility}.");
                 var settings = new SettingsWindow(new AppSettings()) { Width = 620, Height = 520 };
                 if (settings.MinWidth > 620 || settings.MinHeight > 520)

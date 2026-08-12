@@ -29,6 +29,9 @@
         <Setter Property="Padding" Value="10,7"/>
         <Setter Property="ToolTipService.ShowDuration" Value="5000"/>
       </Style>
+      <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignButton}">
+        <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+      </Style>
       <Style x:Key="PanelHeader" TargetType="TextBlock">
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
