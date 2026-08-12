@@ -51,6 +51,8 @@ dotnet publish -c Release -r win-x64 --self-contained false
 .\scripts\verify-release.ps1
 ```
 
+该脚本会依次执行 Release 编译、独立 xUnit 测试、应用内置自检、win-x64 发布，并检查关键发布文件是否完整。安装包构建脚本也会强制运行这套验证。
+
 首次构建或依赖版本发生变化时，请先运行一次 `dotnet restore`。
 
 也可以直接运行应用内置测试，并指定报告位置：

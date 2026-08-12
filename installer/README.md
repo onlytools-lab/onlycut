@@ -13,6 +13,7 @@ artifacts\installer\CutPic-Setup-x64.msi
 ```
 
 The script creates a self-contained .NET 10 `win-x64` publish and packages it with WiX Toolset 5.
+Before packaging, it runs the unified Release build, xUnit tests, application self-tests, and publish validation.
 The MSI installs CutPic for all users under `Program Files\CutPic`, creates Start Menu and desktop shortcuts,
 and registers a normal Windows uninstall entry. Upgrades preserve user data stored under `%LocalAppData%\CutPic`.
 
