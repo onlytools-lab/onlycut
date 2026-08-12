@@ -183,10 +183,15 @@ public partial class App : Application
             Test("Preset persistence", () =>
             {
                 string path = Path.Combine(isolatedData, "presets.json");
+                AtomicFileService.WriteJson(path, new List<ProcessingPreset> { new() { Name = "Legacy" } });
+                if (PresetService.Load(path).All(preset => preset.Name != "Legacy")) throw new InvalidDataException("Legacy preset migration failed.");
                 var presets = PresetService.Load(path);
                 presets.Add(new ProcessingPreset { Name = "Self Test", DetectionModeIndex = 2 });
                 PresetService.Save(path, presets);
                 if (PresetService.Load(path).All(preset => preset.Name != "Self Test")) throw new InvalidDataException("Preset persistence failed.");
+                AtomicFileService.WriteJson(path, new PresetDocument { Version = 999 });
+                try { PresetService.Load(path); throw new InvalidDataException("Future preset version was accepted."); }
+                catch (UnsupportedConfigurationVersionException) { }
             });
             Test("Chinese and English settings windows", () =>
             {

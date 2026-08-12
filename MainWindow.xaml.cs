@@ -78,6 +78,7 @@ public partial class MainWindow : Window
     private bool _retryFailedOnly;
     private bool _settingsWriteBlocked;
     private bool _recoveryWriteBlocked;
+    private bool _presetsWriteBlocked;
     private double _leftSidebarWidth = 248;
     private double _rightSidebarWidth = 372;
     private bool _isLeftSidebarCollapsed;
@@ -114,7 +115,7 @@ public partial class MainWindow : Window
         Closing += (_, _) => { SaveSettings(); SaveRecoveryProject(); };
         LoadSettings();
         LocalizationService.SetLanguage(_languageCode);
-        _presets = PresetService.Load(PresetsPath);
+        _presets = LoadPresetsSafe();
         RefreshPresetList();
         LocalizationService.Apply(this);
         RefreshRecentProjectsMenu();
@@ -208,7 +209,7 @@ public partial class MainWindow : Window
         _languageCode = settings.LanguageCode;
         _shortcuts = ShortcutService.MergeWithDefaults(settings.Shortcuts);
         LocalizationService.SetLanguage(_languageCode);
-        _presets = PresetService.Load(PresetsPath);
+        _presets = LoadPresetsSafe();
         RefreshPresetList();
         _recoveryTimer.Interval = TimeSpan.FromSeconds(_autoSaveIntervalSeconds);
         ApplyFontFamily();
@@ -242,6 +243,17 @@ public partial class MainWindow : Window
         PresetBox.ItemsSource = null; PresetBox.ItemsSource = _presets;
         PresetBox.SelectedItem = _presets.FirstOrDefault(p => p.Id == id) ?? _presets.FirstOrDefault();
         if (_presets.All(p => p.Id != _defaultPresetId)) _defaultPresetId = "builtin-card";
+    }
+
+    private List<ProcessingPreset> LoadPresetsSafe()
+    {
+        try { return PresetService.Load(PresetsPath); }
+        catch (UnsupportedConfigurationVersionException)
+        {
+            _presetsWriteBlocked = true;
+            StatusText.Text = "预设来自更高版本，当前版本不会覆盖该文件";
+            return PresetService.LoadBuiltIns();
+        }
     }
 
     private ProcessingPreset CaptureCurrentPreset(string name, string? id = null) => new()
@@ -293,6 +305,7 @@ public partial class MainWindow : Window
 
     private void SavePreset_Click(object sender, RoutedEventArgs e)
     {
+        if (_presetsWriteBlocked) { ShowMessage("预设文件来自更高版本，当前版本不能覆盖。", "无法保存预设"); return; }
         string name = PresetNameBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(name)) { ShowMessage("请输入自定义预设名称。", "无法保存预设"); return; }
         var existing = _presets.FirstOrDefault(p => !p.IsBuiltIn && string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase));
@@ -305,6 +318,7 @@ public partial class MainWindow : Window
 
     private void DeletePreset_Click(object sender, RoutedEventArgs e)
     {
+        if (_presetsWriteBlocked) { ShowMessage("预设文件来自更高版本，当前版本不能覆盖。", "无法删除预设"); return; }
         if (PresetBox.SelectedItem is not ProcessingPreset preset) return;
         if (preset.IsBuiltIn) { ShowMessage("内置预设不能删除。", "无法删除预设"); return; }
         if (ShowMessage($"确定删除预设“{preset.Name}”吗？", "删除预设", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;

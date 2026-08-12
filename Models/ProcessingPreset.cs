@@ -1,5 +1,11 @@
 namespace CutPic.Models;
 
+public sealed class PresetDocument
+{
+    public int Version { get; set; } = 1;
+    public List<ProcessingPreset> Presets { get; set; } = [];
+}
+
 public sealed class ProcessingPreset
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");

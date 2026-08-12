@@ -1,10 +1,12 @@
 using System.IO;
 using CutPic.Models;
+using System.Text.Json;
 
 namespace CutPic.Services;
 
 public static class PresetService
 {
+    public const int CurrentVersion = 1;
     public static List<ProcessingPreset> Load(string path)
     {
         var presets = BuiltIns();
@@ -12,23 +14,38 @@ public static class PresetService
         {
             if (File.Exists(path))
             {
-                var custom = AtomicFileService.ReadJson<List<ProcessingPreset>>(path) ?? [];
+                using JsonDocument json = JsonDocument.Parse(File.ReadAllText(path));
+                bool legacy = json.RootElement.ValueKind == JsonValueKind.Array;
+                PresetDocument document = legacy
+                    ? new PresetDocument { Version = 0, Presets = json.RootElement.Deserialize<List<ProcessingPreset>>() ?? [] }
+                    : json.RootElement.Deserialize<PresetDocument>() ?? new PresetDocument();
+                if (document.Version > CurrentVersion)
+                    throw new UnsupportedConfigurationVersionException($"Preset version {document.Version} is newer than supported version {CurrentVersion}.");
+                var custom = document.Presets ?? [];
                 foreach (var preset in custom.Where(p => !string.IsNullOrWhiteSpace(p.Name)))
                 {
                     preset.IsBuiltIn = false;
                     if (string.IsNullOrWhiteSpace(preset.Id)) preset.Id = Guid.NewGuid().ToString("N");
                     presets.Add(preset);
                 }
+                if (legacy || document.Version != CurrentVersion) Save(path, presets);
             }
         }
-        catch { }
+        catch (UnsupportedConfigurationVersionException) { throw; }
+        catch (Exception ex) { LogService.Error("presets.load_failed", ex); }
         return presets;
     }
 
     public static void Save(string path, IEnumerable<ProcessingPreset> presets)
     {
-        AtomicFileService.WriteJson(path, presets.Where(p => !p.IsBuiltIn).ToList());
+        AtomicFileService.WriteJson(path, new PresetDocument
+        {
+            Version = CurrentVersion,
+            Presets = presets.Where(p => !p.IsBuiltIn).ToList()
+        });
     }
+
+    public static List<ProcessingPreset> LoadBuiltIns() => BuiltIns();
 
     private static List<ProcessingPreset> BuiltIns() =>
     [
