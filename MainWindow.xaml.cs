@@ -148,14 +148,26 @@ public partial class MainWindow : Window
 
     private void UpdateResponsiveToolbar()
     {
-        double width = ActualWidth > 0 ? ActualWidth : Width;
+        ApplyResponsiveToolbarForWidth(ActualWidth > 0 ? ActualWidth : Width);
+    }
+
+    internal void ApplyResponsiveToolbarForWidth(double width)
+    {
         bool compact = width < 1360;
+        bool narrow = width < 1140;
+        bool veryNarrow = width < 1020;
         ImportFolderButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         OpenProjectButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SaveProjectButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         SettingsButton.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         ProjectActionsSeparator.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         MoreActionsButton.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        AppSubtitleText.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        OpenImagesButtonText.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        DetectButtonText.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        ExportAllButtonText.Visibility = veryNarrow ? Visibility.Collapsed : Visibility.Visible;
+        ExportAllButton.MinWidth = veryNarrow ? 52 : 128;
+        ExportAllButton.Padding = veryNarrow ? new Thickness(14, 0, 14, 0) : new Thickness(16, 0, 16, 0);
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)

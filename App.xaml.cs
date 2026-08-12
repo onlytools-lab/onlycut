@@ -194,6 +194,20 @@ public partial class App : Application
                 LocalizationService.SetLanguage("en-US"); var en = new SettingsWindow(new AppSettings()); en.Show(); en.Close();
             });
             Test("Main window startup", () => { var window = new MainWindow(); window.Show(); window.Close(); });
+            Test("Responsive window layouts", () =>
+            {
+                var main = new MainWindow { Width = 960, Height = 560 };
+                main.ApplyResponsiveToolbarForWidth(960);
+                if (main.MinWidth > 960 || main.MinHeight > 560 || main.MoreActionsButton.Visibility != Visibility.Visible ||
+                    main.ExportAllButtonText.Visibility != Visibility.Collapsed || main.AppSubtitleText.Visibility != Visibility.Collapsed)
+                    throw new InvalidDataException($"Compact main-window layout failed: more={main.MoreActionsButton.Visibility}, exportText={main.ExportAllButtonText.Visibility}, subtitle={main.AppSubtitleText.Visibility}.");
+                var settings = new SettingsWindow(new AppSettings()) { Width = 620, Height = 520 };
+                if (settings.MinWidth > 620 || settings.MinHeight > 520)
+                    throw new InvalidDataException("Compact settings layout failed.");
+                var preview = new ExportPreviewWindow([]) { Width = 680, Height = 500 };
+                if (preview.MinWidth > 680 || preview.MinHeight > 500)
+                    throw new InvalidDataException("Compact export-preview layout failed.");
+            });
         }
         finally
         {
