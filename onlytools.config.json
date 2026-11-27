@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "product": {
+    "name": "OnlyCut",
+    "slug": "onlycut",
+    "tagline": "Windows 智能切图",
+    "description": "原 CutPic，离线宫格、素材及长图裁切",
+    "category": "Windows Tools",
+    "status": "development",
+    "platforms": [
+      "Windows"
+    ],
+    "architectures": [
+      "x64"
+    ]
+  },
+  "repository": {
+    "owner": "onlytools-lab",
+    "name": "onlycut",
+    "url": "https://github.com/onlytools-lab/onlycut"
+  },
+  "release": {
+    "tagPrefix": "v",
+    "titleFormat": "{product} v{version}",
+    "assetNaming": "CutPic-Setup-x64.msi",
+    "requireSha256": false
+  },
+  "build": {
+    "commands": {
+      "test": "dotnet test",
+      "build": "dotnet build CutPic.csproj"
+    },
+    "artifactsPath": "artifacts/installer/",
+    "versionFiles": [
+      "CutPic.csproj"
+    ]
+  },
+  "documentation": {
+    "language": "zh-CN",
+    "readme": "README.md",
+    "changelog": "CHANGELOG.md"
+  }
+}
