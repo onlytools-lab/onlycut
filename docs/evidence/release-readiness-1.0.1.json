@@ -1,0 +1,599 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 5 — Release Readiness",
+  "checkedAtUtc": "2026-11-28T12:38:36.2182277Z",
+  "readiness": "READY FOR INDEPENDENT REVIEW",
+  "releaseAuthorized": false,
+  "releaseOperationsExecuted": false,
+  "phase5NonPublishingChecks": {
+    "odsConfigVersionReadmeChangelogStructure": "PASS",
+    "historicalReleaseNotesStructure": "PASS",
+    "draft101ReleaseNotesStructure": "PASS_NOT_RELEASE_APPROVAL",
+    "actualMsiPositiveAndForgedSidecarNegativeCases": 2,
+    "actualMsiForgeryRegression": "PASS",
+    "full101ChangelogGate": "EXPECTED_REJECTION_NOT_YET_RELEASED",
+    "historical100ChangelogSectionUnchanged": true,
+    "productionWorkflowModified": false,
+    "releaseNotesStatus": "DRAFT_NOT_PUBLISHED"
+  },
+  "git": {
+    "master": "2913936438828ddeecc0b0d2f124cbcf84707659",
+    "phase5Branch": "codex/onlycut-release-readiness-1.0.1",
+    "pr3Merged": true,
+    "pr3MergeCommit": "2913936438828ddeecc0b0d2f124cbcf84707659",
+    "v101TagExists": false,
+    "v101ReleaseExists": false,
+    "masterProtected": false,
+    "otherOpenPrsAtInitialCheck": 0,
+    "headReference": "Use this evidence file commit or its containing Phase 5 Draft PR head, not the MSI build source."
+  },
+  "masterCI": {
+    "runId": 46144513678,
+    "url": "https://github.com/onlytools-lab/onlycut/actions/runs/46144513678",
+    "sha": "2913936438828ddeecc0b0d2f124cbcf84707659",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "validate",
+        "conclusion": "success",
+        "url": "https://github.com/onlytools-lab/onlycut/actions/runs/46144513678/job/140977495798"
+      },
+      {
+        "name": "windows",
+        "conclusion": "success",
+        "url": "https://github.com/onlytools-lab/onlycut/actions/runs/46144513678/job/140977496105"
+      }
+    ]
+  },
+  "originalArtifact": {
+    "id": 15260753305,
+    "name": "OnlyCut-candidate-8715a40208114f0b444245e2010fc4cea47db963",
+    "runId": 46139159100,
+    "url": "https://github.com/onlytools-lab/onlycut/actions/runs/46139159100/artifacts/15260753305",
+    "workflowUrl": "https://github.com/onlytools-lab/onlycut/actions/runs/46139159100",
+    "headSha": "8715a40208114f0b444245e2010fc4cea47db963",
+    "runConclusion": "success",
+    "expired": false,
+    "expiresAtUtc": "2027-02-26T11:17:17Z",
+    "apiZipDigest": "sha256:52eb5280ed6e3c1d07335cb26b4b4fef86d491aafe3911d68c4dd0c283fcf6f1",
+    "freshDownload": true,
+    "zipInspection": {
+      "zipSha256": "52eb5280ed6e3c1d07335cb26b4b4fef86d491aafe3911d68c4dd0c283fcf6f1",
+      "zipSize": 52389307,
+      "entries": [
+        {
+          "path": "CutPic-Setup-x64.msi",
+          "size": 52610127
+        },
+        {
+          "path": "msi-metadata.json",
+          "size": 146671
+        },
+        {
+          "path": "candidate-manifest.json",
+          "size": 432
+        },
+        {
+          "path": "SHA256SUMS.txt",
+          "size": 88
+        }
+      ]
+    }
+  },
+  "msi": {
+    "name": "CutPic-Setup-x64.msi",
+    "size": 52610127,
+    "sha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+    "ProductVersion": "1.0.1",
+    "ProductCode": "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}",
+    "UpgradeCode": "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+    "SummaryTemplate": "x64;2052",
+    "ALLUSERS": "1",
+    "ProductName": "CutPic",
+    "ARPNOREPAIR": "1",
+    "authenticodeStatus": "NotSigned",
+    "actualDatabaseReopened": true,
+    "sidecarsMatchedActualDatabase": true,
+    "matchesPreviouslyInstalledCandidate": true,
+    "rebuilt": false,
+    "manifest": {
+      "product": "OnlyCut",
+      "version": "1.0.1",
+      "commit": "8715a40208114f0b444245e2010fc4cea47db963",
+      "dirty": false,
+      "assets": [
+        {
+          "size": 52610127,
+          "sha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+          "name": "CutPic-Setup-x64.msi"
+        }
+      ],
+      "productCode": "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}",
+      "upgradeCode": "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}"
+    },
+    "components": 405,
+    "files": 403,
+    "upgradeRows": [
+      [
+        "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+        "",
+        "1.0.1",
+        "1",
+        "WIX_UPGRADE_DETECTED"
+      ],
+      [
+        "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+        "1.0.1",
+        "",
+        "2",
+        "WIX_DOWNGRADE_DETECTED"
+      ],
+      [
+        "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+        "1.0.1",
+        "1.0.1",
+        "770",
+        "ONLYCUT_SAME_VERSION_FOUND"
+      ]
+    ],
+    "launchConditions": [
+      [
+        "NOT WIX_DOWNGRADE_DETECTED",
+        "已安装更新版本的 CutPic。"
+      ],
+      [
+        "Installed OR NOT ONLYCUT_SAME_VERSION_FOUND",
+        "ONLYCUT_SAME_VERSION_BLOCKED: 已安装相同版本的 CutPic。请使用已安装产品的维护入口，或安装更高版本。"
+      ]
+    ]
+  },
+  "sourceComparison": {
+    "from": "8715a40208114f0b444245e2010fc4cea47db963",
+    "to": "2913936438828ddeecc0b0d2f124cbcf84707659",
+    "fileCount": 31,
+    "files": [
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/01-startup.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/02-import-recognized.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/03-nine-slices.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/04-export-overview.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/05-export-result.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/06-settings.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/07-rename-overview.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/08-renamed-files.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/09-rename-result.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/10-skip-preflight.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/11-skip-overview.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/12-skip-result.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/13-overwrite-preflight.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/14-overwrite-result.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/15-source-protection.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/16-project-saved.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/17-project-restored.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/18-settings-restored.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/19-appearance-language.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/20-shortcuts.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/21-maximized-100dpi.png",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/automated-recheck.json",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/observations.json",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/gui-final/remote-delivery-status.json",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/msi-policy-1.0.1.json",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/evidence/upgrade-1.0.1-sandbox.json",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "A",
+        "path": "docs/final-pr3-acceptance.md",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "M",
+        "path": "docs/msi-upgrade-1.0.1-test.md",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "M",
+        "path": "docs/release-process.md",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "M",
+        "path": "docs/windows-validation.md",
+        "classification": "documentation-evidence",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": false,
+        "effect": "Documentation, screenshot or test observation; not copied to application publish or MSI payload."
+      },
+      {
+        "status": "M",
+        "path": "scripts/compare-msi-identity.ps1",
+        "classification": "upgrade-test-gate",
+        "applicationBuildInput": false,
+        "msiBuildInput": false,
+        "changesInstallerIdentity": false,
+        "changesCandidateWorkflow": false,
+        "changesUpgradeTestGate": true,
+        "effect": "Adds installed-directory/filename shared component identity checks; not invoked by app/MSI build or candidate generation."
+      }
+    ],
+    "productInputDifferenceCount": 0,
+    "rebuildByteEquivalenceClaimed": false,
+    "gitRevisionMetadataCaveat": "SDK InitializeSourceControlInformation reports current commit; IncludeSourceRevisionInInformationalVersion=true. Do not claim binary equivalence when rebuilding identical product files at another commit."
+  },
+  "workflows": [
+    {
+      "name": "Windows candidate (no release)",
+      "path": ".github/workflows/candidate.yml",
+      "state": "active"
+    },
+    {
+      "name": "ONLYTOOLS Governance Validation",
+      "path": ".github/workflows/ods-validation.yml",
+      "state": "active"
+    }
+  ],
+  "securityAudit": {
+    "sdk": "10.0.402",
+    "restoreCommand": "dotnet restore tests/CutPic.Tests/CutPic.Tests.csproj --force --no-cache -p:NuGetAudit=true -p:NuGetAuditMode=all -v minimal",
+    "restoreExitCode": 0,
+    "restoreNu1900Observed": false,
+    "auditDisabled": false,
+    "results": [
+      {
+        "project": "CutPic.csproj",
+        "exitCode": 0,
+        "knownVulnerablePackageCount": 0,
+        "report": {
+          "version": 1,
+          "parameters": "--vulnerable --include-transitive",
+          "sources": [
+            "https://api.nuget.org/v3/index.json",
+            "C:/Program Files (x86)/Microsoft SDKs/NuGetPackages/"
+          ],
+          "projects": [
+            {
+              "path": "CutPic.csproj"
+            }
+          ]
+        }
+      },
+      {
+        "project": "tests/CutPic.Tests/CutPic.Tests.csproj",
+        "exitCode": 0,
+        "knownVulnerablePackageCount": 0,
+        "report": {
+          "version": 1,
+          "parameters": "--vulnerable --include-transitive",
+          "sources": [
+            "https://api.nuget.org/v3/index.json",
+            "C:/Program Files (x86)/Microsoft SDKs/NuGetPackages/"
+          ],
+          "projects": [
+            {
+              "path": "tests/CutPic.Tests/CutPic.Tests.csproj"
+            }
+          ]
+        }
+      }
+    ],
+    "limitation": "Current NuGet advisory sources only. Not a guarantee of zero vulnerabilities, an Authenticode signature, a .NET native runtime security audit or an OS compatibility matrix."
+  },
+  "historicalRelease": {
+    "tag": "v1.0.0",
+    "url": "https://github.com/onlytools-lab/onlycut/releases/tag/v1.0.0",
+    "publishedAt": "2026-08-12T14:37:07Z",
+    "modifiedByPhase5": false,
+    "assets": [
+      {
+        "id": 511688981,
+        "name": "CutPic-Setup-x64.msi",
+        "size": 52671338,
+        "digest": "sha256:e6ae6ebd6050c25257fa27c9229ef358c793dc315c54388dcb29c753a1432862"
+      }
+    ]
+  },
+  "priorAcceptance": {
+    "msiSha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+    "installationMatrix": "docs/evidence/upgrade-1.0.1-sandbox.json",
+    "gui": "docs/evidence/gui-final/observations.json",
+    "guiMethod": "AI-operated real installed GUI; not independent human sign-off",
+    "phase5Reinstalled": false,
+    "phase5RepeatedGui": false
+  },
+  "riskDispositions": {
+    "blocker": [
+      "No authority to perform release operations; final approval is required.",
+      "Release-day documentation/tag target and fresh asset/CI checks remain unexecuted gates, not present product defects."
+    ],
+    "acceptanceRequired": [
+      "Exact artifact promotion from 8715a402 while tag points to final reviewed master.",
+      "Unsigned MSI; adding a signature changes bytes and invalidates exact-hash promotion.",
+      "125/150/mixed DPI; complex real user data migration; failure/power-loss rollback; diverse Windows/permissions/security-software scenarios untested.",
+      "Artifact expiration and independently retained original-byte backups.",
+      "Master is unprotected; CI success is observed but is not a server-enforced required-check policy.",
+      "NuGet audit does not cover all bundled native runtime/OS security risks."
+    ],
+    "postRelease": [
+      "Broader automated UI/DPI/environment matrix and reproducible/locked build improvements; no production workflow changes implemented in Phase 5."
+    ]
+  }
+}
