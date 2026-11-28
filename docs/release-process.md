@@ -31,4 +31,8 @@ installer/build-installer.ps1 会清理明确的 artifacts/candidate 生成目�
 
 ## 候选可信边界
 
+### 精确资产晋升与重建
+
+PR #3 候选、最终代码与未来正式 MSI 的关系见 [最终验收补充](final-pr3-acceptance.md)。若审查批准复用已验证 Actions 原包，必须保留真实源提交和原清单，不得把源提交改成后来的审查 Head/Tag。晋升只允许精确相同 SHA-256 的原始 MSI；正式发布仍须单独授权。若要求从合并后 Head/Tag 构建，或任何生产输入/字节改变，必须作为新测试 Artifact 完整重新验收，旧包测试不适用于新 SHA-256。
+
 SHA-256 证明文件与清单一致，不证明来源受信。msi-metadata.json 仅是便于审查的旁车报告，不是独立可信来源。Windows 验证必须调用 scripts/verify-msi-candidate.ps1：重新打开实际 MSI 数据库，对照版本、ProductCode、UpgradeCode、架构、组件/文件/升级/目录/启动条件表和清单，并在读前读后核对 MSI 摘要。Python validate_candidate.py 只检查文件/JSON 一致性，不能独立证明 MSI 元数据真实。scripts/test-msi-verifier.ps1 使用实际 MSI 验证有效候选并协同伪造两个 JSON，要求数据库核对拒绝伪造。

@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-28",
+  "repository": "https://github.com/onlytools-lab/onlycut",
+  "pullRequest": 3,
+  "knownReviewedHead": "1eca178d4235fd49e330ab0a3ac28c7526718708",
+  "knownMaster": "bf3bb260d88c09839b3fc235a7a287538f03df2d",
+  "evidencePush": "PENDING_NETWORK",
+  "newHeadCI": "NOT_TESTED",
+  "failures": [
+    "gh api: Get https://api.github.com/repos/onlytools-lab/onlycut/pulls/3: EOF",
+    "git fetch origin: schannel: failed to receive handshake, SSL/TLS connection failed",
+    "git OpenSSL backend fetch: unexpected eof while reading",
+    "GitHub connector: HTTP request failed to chatgpt.com/backend-api/ps/mcp",
+    "Public PR page fallback: Cache miss"
+  ],
+  "draftTransitionPerformed": false,
+  "mergePerformed": false,
+  "tagCreated": false,
+  "releasePublished": false
+}
