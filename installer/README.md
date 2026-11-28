@@ -9,7 +9,7 @@ powershell -ExecutionPolicy Bypass -File .\installer\build-installer.ps1
 Output:
 
 ```text
-artifacts\installer\CutPic-Setup-x64.msi
+artifacts\candidate\CutPic-Setup-x64.msi
 ```
 
 The script creates a self-contained .NET 10 `win-x64` publish and packages it with WiX Toolset 5.
@@ -19,8 +19,8 @@ and registers a normal Windows uninstall entry. Upgrades preserve user data stor
 
 Release checklist:
 
-1. Update `Version`, `AssemblyVersion`, and `FileVersion` in `CutPic.csproj`.
+1. Update only `Version` in `Directory.Build.props` after version approval; assembly/file versions are derived.
 2. Keep the `UpgradeCode` in `Package.wxs` unchanged.
-3. Update the MSI `Version` to match the project version.
+3. MSI ProductVersion is passed from the canonical version by the build script.
 4. Run the build script and verify the MSI ProductVersion.
 5. Sign `CutPic.exe` and the MSI when a code-signing certificate is available.

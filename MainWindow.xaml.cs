@@ -1128,9 +1128,8 @@ public partial class MainWindow : Window
                         string fileName = BuildExportFileName(baseName, isLongTask, i, extension, namingMode,
                             namingPrefix, namingSuffix, namingStart, namingDigits);
                         string requestedPath = System.IO.Path.Combine(taskOutputDirectory, fileName);
-                        string? path = ResolveOutputPath(requestedPath, conflictPolicy);
-                        if (path is null) { skipped++; completed++; continue; }
-                        ImageProcessingService.Save(output, path, format, jpegQuality);
+                        if (!SaveExportOutput(output, requestedPath, conflictPolicy, format, jpegQuality))
+                        { skipped++; completed++; continue; }
                         total++; succeeded++;
                         }
                         catch (Exception ex)
@@ -1204,7 +1203,7 @@ public partial class MainWindow : Window
                     BuildExportFileName(baseName, isLong, i, extension, namingMode, namingPrefix, namingSuffix, namingStart, namingDigits)));
                 if (!planned.Add(path)) duplicateNames++;
                 if (File.Exists(path)) existingConflicts++;
-                if (string.Equals(path, System.IO.Path.GetFullPath(task.Path), StringComparison.OrdinalIgnoreCase))
+                if (IsSourceImagePath(path))
                     result.Errors.Add($"导出路径会覆盖源图片：{task.Name}");
             }
         }
@@ -1276,6 +1275,19 @@ public partial class MainWindow : Window
             string candidate = System.IO.Path.Combine(directory, $"{name} ({number}){extension}");
             if (!File.Exists(candidate)) return candidate;
         }
+    }
+
+    private bool IsSourceImagePath(string path) => _tasks.Any(task =>
+        string.Equals(System.IO.Path.GetFullPath(path), System.IO.Path.GetFullPath(task.Path), StringComparison.OrdinalIgnoreCase));
+
+    // Shared by the actual export loop and integration acceptance tests.
+    private bool SaveExportOutput(BitmapSource output, string requestedPath, int policy, string format, int quality)
+    {
+        string? path = ResolveOutputPath(requestedPath, policy);
+        if (path is null) return false;
+        if (IsSourceImagePath(path)) throw new IOException("导出目标是任务队列中的源图片，已阻止覆盖。");
+        ImageProcessingService.Save(output, path, format, quality);
+        return true;
     }
 
     internal static string BuildExportFileName(string sourceBaseName, bool isLong, int zeroBasedIndex,

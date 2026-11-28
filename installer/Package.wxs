@@ -1,5 +1,5 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="CutPic" Manufacturer="CutPic" Version="1.0.0" Language="2052"
+  <Package Name="CutPic" Manufacturer="CutPic" Version="$(var.ProductVersion)" Language="2052"
            UpgradeCode="6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A" Scope="perMachine">
     <SummaryInformation Description="CutPic 智能切图工具" Manufacturer="CutPic"/>
     <MajorUpgrade DowngradeErrorMessage="已安装更新版本的 CutPic。"/>
@@ -23,7 +23,7 @@
     </Feature>
 
     <ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
-      <Files Include="$(var.RootDir)\artifacts\publish\win-x64-self-contained\**"/>
+      <Files Include="$(var.PublishDir)\**"/>
     </ComponentGroup>
 
     <Component Id="ProgramMenuShortcut" Directory="ProgramMenuCutPicFolder" Guid="*">

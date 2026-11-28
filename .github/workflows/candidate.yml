@@ -1,0 +1,49 @@
+name: Windows candidate (no release)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python scripts/ods.py validate-config --config onlytools.config.json
+      - run: python scripts/check_product_version.py
+      - run: python scripts/ods.py validate-readme
+      - run: python scripts/ods.py validate-changelog --structure-only
+      - run: python scripts/ods.py validate-release --notes docs/RELEASE-NOTES-v1.0.0.md --version 1.0.0
+      - run: python -m unittest discover -s scripts -p test_candidate.py -v
+      - name: Install pinned WiX
+        run: dotnet tool install --global wix --version 5.0.2
+      - name: Build and inspect candidate
+        shell: pwsh
+        run: ./installer/build-installer.ps1
+      - name: Reject dirty or mismatched source
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          ./scripts/verify-msi-candidate.ps1 -Directory artifacts/candidate -Version $props.Project.PropertyGroup.Version -Commit $env:GITHUB_SHA
+      - name: Verify actual MSI and reject forged sidecars
+        shell: pwsh
+        run: ./scripts/test-msi-verifier.ps1 -Directory artifacts/candidate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OnlyCut-candidate-${{ github.sha }}
+          path: |
+            artifacts/candidate/CutPic-Setup-x64.msi
+            artifacts/candidate/candidate-manifest.json
+            artifacts/candidate/msi-metadata.json
+            artifacts/candidate/SHA256SUMS.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-validation
+          path: test-results/
