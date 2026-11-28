@@ -1,0 +1,160 @@
+{
+  "manifest": {
+    "product": "OnlyCut",
+    "version": "1.0.1",
+    "commit": "8715a40208114f0b444245e2010fc4cea47db963",
+    "dirty": false,
+    "assets": [
+      {
+        "size": 52610127,
+        "sha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+        "name": "CutPic-Setup-x64.msi"
+      }
+    ],
+    "productCode": "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}",
+    "upgradeCode": "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}"
+  },
+  "candidateRun": "https://github.com/onlytools-lab/onlycut/actions/runs/46139159100",
+  "ciRun": "https://github.com/onlytools-lab/onlycut/actions/runs/46139162619",
+  "properties": {
+    "ALLUSERS": "1",
+    "ProductLanguage": "2052",
+    "ARPNOREPAIR": "1",
+    "Manufacturer": "CutPic",
+    "ProductVersion": "1.0.1",
+    "ProductName": "CutPic",
+    "UpgradeCode": "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+    "SecureCustomProperties": "ONLYCUT_SAME_VERSION_FOUND;WIX_DOWNGRADE_DETECTED;WIX_UPGRADE_DETECTED",
+    "ARPPRODUCTICON": "CutPicIcon",
+    "ProductCode": "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+  },
+  "upgradeTable": [
+    [
+      "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+      "",
+      "1.0.1",
+      "1",
+      "WIX_UPGRADE_DETECTED"
+    ],
+    [
+      "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+      "1.0.1",
+      "",
+      "2",
+      "WIX_DOWNGRADE_DETECTED"
+    ],
+    [
+      "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+      "1.0.1",
+      "1.0.1",
+      "770",
+      "ONLYCUT_SAME_VERSION_FOUND"
+    ]
+  ],
+  "launchConditions": [
+    [
+      "NOT WIX_DOWNGRADE_DETECTED",
+      "已安装更新版本的 CutPic。"
+    ],
+    [
+      "Installed OR NOT ONLYCUT_SAME_VERSION_FOUND",
+      "ONLYCUT_SAME_VERSION_BLOCKED: 已安装相同版本的 CutPic。请使用已安装产品的维护入口，或安装更高版本。"
+    ]
+  ],
+  "executeOrder": [
+    [
+      "FindRelatedProducts",
+      "",
+      "25"
+    ],
+    [
+      "LaunchConditions",
+      "",
+      "100"
+    ]
+  ],
+  "uiOrder": [
+    [
+      "FindRelatedProducts",
+      "",
+      "25"
+    ],
+    [
+      "LaunchConditions",
+      "",
+      "100"
+    ]
+  ],
+  "historicalComparison": {
+    "status": "PASS",
+    "baselineSha256": "E6AE6EBD6050C25257FA27C9229EF358C793DC315C54388DCB29C753A1432862",
+    "candidateSha256": "5AAB9B685B8C65C703EB61B80C219C20B977C8104FD8DEDCD9BE1C36D653886A",
+    "oldComponents": 405,
+    "newComponents": 405,
+    "unchangedCommonComponents": 404,
+    "changedCommonComponents": 0
+  },
+  "twinComparison": {
+    "status": "PASS",
+    "baselineSha256": "5AAB9B685B8C65C703EB61B80C219C20B977C8104FD8DEDCD9BE1C36D653886A",
+    "candidateSha256": "59168945E2AAD789B162BDD56F3D6843E8DCF5C836A4A6EDA994CED309525F4A",
+    "oldComponents": 405,
+    "newComponents": 405,
+    "unchangedCommonComponents": 404,
+    "changedCommonComponents": 0
+  },
+  "logs": [
+    {
+      "stage": "upgrade",
+      "sha256": "A24ADD721BCD268A4C65684A52A48FE4D707C72F31689FE014251C68A983CA85"
+    },
+    {
+      "stage": "repair",
+      "sha256": "2130056BCEF60B9C986D6C72D406178B519A29ECD2CDA5B4B75703F18712C15D"
+    },
+    {
+      "stage": "same-version-rejection",
+      "sha256": "BA3480558796B5314B84395DBE2B5F5E5F92C63AA5473687805D301F38B5D3AB"
+    },
+    {
+      "stage": "downgrade-rejection",
+      "sha256": "F80BC7985BA7F427704300ED40CF2C90ADD48A5E32FD2D7DAADB93E1FC308697"
+    },
+    {
+      "stage": "uninstall",
+      "sha256": "54779F7AD0AE9B7280F5B9CC52785DFF2BC7A338BBF136DC85C21545766E72E5"
+    }
+  ],
+  "installedSelfTests": [
+    "CutPic self-test",
+    "Version: 1.0.1.0",
+    "Runtime: 10.0.15",
+    "Started: 2026-11-28T19:21:48.2231750+08:00",
+    "",
+    "PASS  EXIF orientations and metadata  (33 ms)",
+    "PASS  Manual transform mapping  (1 ms)",
+    "PASS  Long-image divider continuity  (1 ms)",
+    "PASS  Atomic write and backup recovery  (27 ms)",
+    "PASS  Structured logs and diagnostic package  (26 ms)",
+    "PASS  Actionable error messages  (0 ms)",
+    "PASS  Settings and project migration  (5 ms)",
+    "PASS  Image output and thumbnail pipeline  (6 ms)",
+    "PASS  Shortcut defaults and export naming  (2 ms)",
+    "PASS  Preset persistence  (67 ms)",
+    "PASS  Chinese and English settings windows  (951 ms)",
+    "PASS  Main window startup  (528 ms)",
+    "PASS  Responsive window layouts  (191 ms)",
+    "",
+    "RESULT: PASSED"
+  ],
+  "installedAcceptance": [
+    "OnlyCut synthetic pipeline acceptance (not manual UI acceptance)",
+    "PASS image import, 4-card detection and batch square exports",
+    "PASS 4 borderless elements and transparent crop",
+    "PASS long-image continuous width and total height",
+    "PASS project save/load through main-window persistence",
+    "PASS existing-file rename/skip and corrupted-image rejection",
+    "PASS two-task cross-source protection and actual rename/skip/overwrite writes",
+    "RESULT: PASSED (6 groups)"
+  ]
+}

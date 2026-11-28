@@ -1,0 +1,274 @@
+{
+  "inputs": {
+    "candidateCode": "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}",
+    "upgradeCode": "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+    "assets": [
+      {
+        "name": "candidate.msi",
+        "sha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a"
+      },
+      {
+        "name": "historical.msi",
+        "sha256": "e6ae6ebd6050c25257fa27c9229ef358c793dc315c54388dcb29c753a1432862"
+      },
+      {
+        "name": "twin.msi",
+        "sha256": "59168945e2aad789b162bdd56f3d6843e8dcf5c836a4a6eda994ced309525f4a"
+      }
+    ],
+    "twinCode": "{C7E1FC9F-E087-4FE8-A03B-F7640C7A322A}",
+    "version": "1.0.1",
+    "oldCode": "{2B276364-52BF-4615-8729-45B70CA63F2B}"
+  },
+  "stages": {
+    "historical-install": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "68BBFA28E61FE4B67831CD87EE55F1BE7CC580594F1600ED7C334C24A65F38A2",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "D87F0F9408CA980FE40C556A62F0CF2E9811B3789D3C0EA66231E44C6285D616",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.0.0",
+        "related": [
+          "{2B276364-52BF-4615-8729-45B70CA63F2B}"
+        ],
+        "old": 5,
+        "candidate": -1
+      },
+      "exitCode": 0
+    },
+    "historical-launch": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "68BBFA28E61FE4B67831CD87EE55F1BE7CC580594F1600ED7C334C24A65F38A2",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "D87F0F9408CA980FE40C556A62F0CF2E9811B3789D3C0EA66231E44C6285D616",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.0.0",
+        "related": [
+          "{2B276364-52BF-4615-8729-45B70CA63F2B}"
+        ],
+        "old": 5,
+        "candidate": -1
+      },
+      "exitCode": 0
+    },
+    "upgrade": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 0
+    },
+    "upgraded-launch": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 0
+    },
+    "data-after-upgrade": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": null
+    },
+    "functional-smoke": {
+      "acceptanceExitCode": 0,
+      "selfTestExitCode": 0,
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    "maintenance": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 0
+    },
+    "repair": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 0
+    },
+    "same-version-rejection": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 1603
+    },
+    "downgrade-rejection": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 1603
+    },
+    "post-rejection-launch": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": true,
+        "exeHash": "012C38B9286435089F6BE2271FF977D6BD63CC7604AB059C03058F37B2F2193E",
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": "044290614D6E53904012C62C5E26DE670DB7DEEA5084B88F5BC247336D83A7C9",
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": true,
+        "fileVersion": "1.0.1.0",
+        "related": [
+          "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}"
+        ],
+        "old": -1,
+        "candidate": 5
+      },
+      "exitCode": 0
+    },
+    "uninstall": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": false,
+        "exeHash": null,
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": null,
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": false,
+        "fileVersion": null,
+        "related": [],
+        "old": -1,
+        "candidate": -1
+      },
+      "exitCode": 0
+    },
+    "data-retention": {
+      "status": "PASS",
+      "actual": {
+        "exeExists": false,
+        "exeHash": null,
+        "twin": -1,
+        "markerHash": "CB0E4B887E98FDCF9DB88C9782A637552920D5EEFCA557B0445B2A868A0CDA35",
+        "dllHash": null,
+        "projectHash": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "dllExists": false,
+        "fileVersion": null,
+        "related": [],
+        "old": -1,
+        "candidate": -1
+      },
+      "exitCode": null
+    }
+  },
+  "realUserMigration": "NOT TESTED",
+  "manualGUI": "NOT TESTED",
+  "dpi": "NOT TESTED",
+  "status": "PASS"
+}
