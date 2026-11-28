@@ -1130,6 +1130,7 @@ public partial class MainWindow : Window
                         string requestedPath = System.IO.Path.Combine(taskOutputDirectory, fileName);
                         string? path = ResolveOutputPath(requestedPath, conflictPolicy);
                         if (path is null) { skipped++; completed++; continue; }
+                        if (IsSourceImagePath(path)) throw new IOException("导出目标是任务队列中的源图片，已阻止覆盖。");
                         ImageProcessingService.Save(output, path, format, jpegQuality);
                         total++; succeeded++;
                         }
@@ -1204,7 +1205,7 @@ public partial class MainWindow : Window
                     BuildExportFileName(baseName, isLong, i, extension, namingMode, namingPrefix, namingSuffix, namingStart, namingDigits)));
                 if (!planned.Add(path)) duplicateNames++;
                 if (File.Exists(path)) existingConflicts++;
-                if (string.Equals(path, System.IO.Path.GetFullPath(task.Path), StringComparison.OrdinalIgnoreCase))
+                if (IsSourceImagePath(path))
                     result.Errors.Add($"导出路径会覆盖源图片：{task.Name}");
             }
         }
@@ -1277,6 +1278,9 @@ public partial class MainWindow : Window
             if (!File.Exists(candidate)) return candidate;
         }
     }
+
+    private bool IsSourceImagePath(string path) => _tasks.Any(task =>
+        string.Equals(System.IO.Path.GetFullPath(path), System.IO.Path.GetFullPath(task.Path), StringComparison.OrdinalIgnoreCase));
 
     internal static string BuildExportFileName(string sourceBaseName, bool isLong, int zeroBasedIndex,
         string extension, int namingMode, string prefix, string suffix, int startNumber, int digits)

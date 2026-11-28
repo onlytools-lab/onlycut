@@ -66,6 +66,10 @@ def release(notes,version,config_path="onlytools.config.json"):
             if not assets: errors.append("Downloads section lists no assets")
             for a in assets:
                 if a == "SHA256SUMS.txt": continue
+                # OnlyCut preserves its legacy installer download name; version/source
+                # integrity is checked separately against the actual MSI and manifest.
+                if product == "OnlyCut" and a == c.get("release",{}).get("assetNaming") == "CutPic-Setup-x64.msi":
+                    continue
                 if f"v{version}" not in a: errors.append(f"asset name '{a}' does not contain v{version}")
                 if not a.startswith(f"{product}-"): errors.append(f"asset name '{a}' not in {{product}}-… standard form")
     if errors:

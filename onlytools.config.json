@@ -23,16 +23,16 @@
     "tagPrefix": "v",
     "titleFormat": "{product} v{version}",
     "assetNaming": "CutPic-Setup-x64.msi",
-    "requireSha256": false
+    "requireSha256": true
   },
   "build": {
     "commands": {
-      "test": "dotnet test",
-      "build": "dotnet build CutPic.csproj"
+      "test": "dotnet test tests/CutPic.Tests/CutPic.Tests.csproj -c Release",
+      "build": "dotnet build CutPic.csproj -c Release"
     },
-    "artifactsPath": "artifacts/installer/",
+    "artifactsPath": "artifacts/candidate/",
     "versionFiles": [
-      "CutPic.csproj"
+      "Directory.Build.props"
     ]
   },
   "documentation": {

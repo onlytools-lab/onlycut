@@ -14,7 +14,12 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.FirstOrDefault() is "--self-test" or "--acceptance") ShutdownMode = ShutdownMode.OnExplicitShutdown;
         LogService.Initialize();
+        if (e.Args.Length >= 2 && e.Args[0] == "--acceptance")
+        {
+            Shutdown(RunAcceptance(e.Args[1])); return;
+        }
         DispatcherUnhandledException += (_, args) =>
         {
             WriteCrashLog(args.Exception);

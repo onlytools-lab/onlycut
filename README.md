@@ -1,10 +1,10 @@
-# CutPic 智能切图
+# OnlyCut 智能切图（原 CutPic）
 
 CutPic 是一款面向 Windows 的轻量级离线切图工具，用于把 AI 生成的商品宫格、无明显边界的图标/贴纸素材，以及营销长图快速拆分成独立图片。
 
 应用基于 .NET 10、WPF 和 MaterialDesignInXAML Toolkit 5.3.2 开发。图片识别、裁切和导出全部在本机完成，不会上传用户图片。
 
-## 适用场景
+## 功能特性
 
 - 商品宫格：从带卡片边界的 2×3、3×3 等商品图中提取单个商品。
 - 无边界素材：识别白色或近似纯色背景上的图标、水彩元素、贴纸和表情。
@@ -13,23 +13,25 @@ CutPic 是一款面向 Windows 的轻量级离线切图工具，用于把 AI 生
 
 ## 系统要求
 
-- Windows 10 版本 1809 或更高版本，推荐 Windows 11。
+- 面向 Windows x64；各 Windows 版本的安装、升级和卸载验收状态见 `docs/windows-validation.md`。
 - x64 处理器。
 - 普通发布版需要安装 .NET 10 Desktop Runtime。
 - 自包含 MSI 已包含 .NET 10 运行时，目标电脑无需另行安装。
-- 支持 Windows 125%、150%、200% 缩放和不同缩放比例的多显示器环境。
+- 已实现 Per-Monitor V2 DPI 感知；各缩放比例和混合 DPI 的实机验收需分别执行。
 
-## 安装与启动
+## 下载与安装
+
+下载：[GitHub Releases](https://github.com/onlytools-lab/onlycut/releases)。当前版本保持 **1.0.0**。工程治理候选包不代表新正式版本，不替换历史附件。
 
 ### 使用安装包
 
 运行：
 
 ```text
-artifacts\installer\CutPic-Setup-x64.msi
+artifacts\candidate\CutPic-Setup-x64.msi
 ```
 
-安装包会把应用安装到 `Program Files\CutPic`，并创建开始菜单和桌面快捷方式。覆盖升级和卸载不会删除 `%LocalAppData%\CutPic` 中的用户配置。
+安装包会把应用安装到 `Program Files\CutPic`，并创建开始菜单和桌面快捷方式。安装器没有主动删除 `%LocalAppData%\CutPic` 的规则；实际数据保留和升级验证状态见 Windows 验收记录。
 
 ### 直接运行本地发布版
 
@@ -383,11 +385,12 @@ artifacts\verify\win-x64
 安装包脚本会先强制运行完整验证，再生成自包含发布和 MSI：
 
 ```text
-artifacts\publish\win-x64-self-contained
-artifacts\installer\CutPic-Setup-x64.msi
+artifacts\candidate\CutPic-Setup-x64.msi
+artifacts\candidate\candidate-manifest.json
+artifacts\candidate\SHA256SUMS.txt
 ```
 
-发布新版本时还应同步更新 `CutPic.csproj` 和 `installer/Package.wxs` 中的版本号，保持 `UpgradeCode` 不变，并在具备代码签名证书后对 EXE 和 MSI 签名。
+发布新版本时只在获得版本授权后更新 `Directory.Build.props` 的产品版本，保持安装兼容标识，并在具备代码签名证书后签名。签名会改变文件摘要，须重新检查最终 MSI 和生成 SHA-256。
 
 ## 项目结构
 
@@ -411,6 +414,20 @@ installer\                    WiX 安装包定义与脚本
 - 自动识别结果仍可能受复杂背景、元素重叠、阴影和极低对比度影响，需要人工复查。
 - 当前正式安装包面向 Windows x64。
 
-## 隐私说明
+## 数据与隐私
 
 CutPic 不需要网络即可完成图片处理。应用日志记录运行事件和错误信息，但诊断包不会主动收集或打包用户图片与项目文件。用户可以在 `%LocalAppData%\CutPic` 中查看或清理本地数据。
+
+## 问题反馈
+
+请在 [Issues](https://github.com/onlytools-lab/onlycut/issues) 提供复现步骤、版本、Windows 版本及必要的诊断日志。日志可能包含文件路径，分享前请检查个人信息。
+
+## 许可证
+
+仓库目前没有声明项目开源许可证，不能据此推定获得任意再分发或商业使用授权。第三方依赖遵循各自许可证。
+
+## 版本与候选发布治理
+
+`Directory.Build.props` 是产品版本唯一来源：`1.0.0` 映射程序集与文件版本 `1.0.0.0`，并传入 WiX ProductVersion。MSI 限制 major/minor ≤255、build ≤65535；不通过第四段区分升级版本。
+
+SDK 由 `global.json` 选择 .NET 10.0.402，并只允许同 feature band 的补丁滚动。候选工作流仅通过 Actions Artifact 保存 MSI、元数据和 SHA-256；不创建 Tag 或 Release。详细流程见 `docs/release-process.md`。

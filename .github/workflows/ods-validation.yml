@@ -1,13 +1,8 @@
 name: ONLYTOOLS Governance Validation
 on:
   pull_request:
-    paths:
-      - 'onlytools.config.json'
-      - 'scripts/ods.py'
-      - 'scripts/check_product_version.py'
-      - '.github/workflows/ods-validation.yml'
-      - 'Directory.Build.props'
-      - 'CutPic.csproj'
+  push:
+    branches: [master]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,4 +17,23 @@ jobs:
       - name: Validate ONLYTOOLS product metadata
         run: python scripts/ods.py validate-config --config onlytools.config.json
       - name: Validate MSBuild version baseline
-        run: python scripts/check_product_version.py --version 1.0.0
+        run: python scripts/check_product_version.py
+      - run: python scripts/ods.py validate-readme
+      - run: python scripts/ods.py validate-changelog --structure-only
+      - run: python scripts/ods.py validate-release --notes docs/RELEASE-NOTES-v1.0.0.md --version 1.0.0
+      - run: python -m unittest discover -s scripts -p test_candidate.py -v
+  windows:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build, test, self-test and verify publish
+        shell: pwsh
+        run: ./scripts/verify-release.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-validation
+          path: test-results/
