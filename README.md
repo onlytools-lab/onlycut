@@ -21,7 +21,7 @@ CutPic 是一款面向 Windows 的轻量级离线切图工具，用于把 AI 生
 
 ## 下载与安装
 
-下载：[GitHub Releases](https://github.com/onlytools-lab/onlycut/releases)。当前已发布版本为 **1.0.0**。本开发分支的 **1.0.1 仅为升级测试候选**，尚未获准正式发布，不替换历史附件。
+下载：[GitHub Releases](https://github.com/onlytools-lab/onlycut/releases)。当前已发布版本为 **1.0.0**。当前源码的 **1.0.1 仍为待审批候选**，尚未获准正式发布，不替换历史附件。发布准备材料见 [Phase 5 报告](docs/release-readiness-1.0.1.md)。
 
 ### 使用安装包
 
