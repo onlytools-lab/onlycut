@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <!-- Development-only upgrade candidate; not an approved formal release. -->
+    <Version>1.0.1</Version>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>

@@ -19,7 +19,7 @@ jobs:
       - run: python scripts/ods.py validate-readme
       - run: python scripts/ods.py validate-changelog --structure-only
       - run: python scripts/ods.py validate-release --notes docs/RELEASE-NOTES-v1.0.0.md --version 1.0.0
-      - run: python -m unittest discover -s scripts -p test_candidate.py -v
+      - run: python -m unittest discover -s scripts -p 'test_*.py' -v
       - name: Install pinned WiX
         run: dotnet tool install --global wix --version 5.0.2
       - name: Build and inspect candidate

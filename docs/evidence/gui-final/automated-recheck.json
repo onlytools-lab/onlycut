@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-28",
+  "testedProductInputsCommit": "8715a40208114f0b444245e2010fc4cea47db963",
+  "startingReviewedHead": "1eca178d4235fd49e330ab0a3ac28c7526718708",
+  "releaseVerification": "PASS_WITH_NETWORK_AUDIT_WARNINGS",
+  "buildErrors": 0,
+  "buildWarnings": {"NU1900": 2},
+  "vulnerabilityAudit": "UNAVAILABLE_NETWORK",
+  "xunit": {"passed": 10, "failed": 0, "skipped": 0},
+  "applicationSelfTest": {"passedGroups": 13, "failedGroups": 0},
+  "pipelineAcceptance": {"passedGroups": 6, "failedGroups": 0},
+  "pythonRegression": {
+    "passed": 3,
+    "failed": 0,
+    "note": "Two restricted-process attempts had one PermissionError on temporary MSI fixture creation. Authorized unrestricted rerun of the unchanged three tests passed."
+  },
+  "odsVersionReadmeChangelogHistoricalNotes": "PASS",
+  "actualMsiDatabaseReverification": "PASS",
+  "msiSha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+  "newHeadGithubCI": "NOT_VERIFIED_NETWORK_BLOCKED",
+  "guiCountedInTheseTests": false
+}

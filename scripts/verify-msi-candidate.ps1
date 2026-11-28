@@ -26,7 +26,7 @@ if ($actual.Properties.ProductVersion -cne $Version -or
     $actual.Properties.UpgradeCode -ine '{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}' -or
     $actual.Properties.ProductName -cne 'CutPic' -or $actual.Properties.ALLUSERS -ne '1' -or
     $actual.SummaryTemplate -notmatch '^x64;') { throw 'Actual MSI identity/scope/architecture mismatch' }
-foreach ($name in @('Components','Upgrades','Directories','Files','LaunchConditions','SummaryTemplate')) {
+foreach ($name in @('Components','Upgrades','Directories','Files','LaunchConditions','ExecuteSequence','UISequence','SummaryTemplate')) {
     $left = ConvertTo-Json -InputObject $stored.$name -Depth 12 -Compress
     $right = ConvertTo-Json -InputObject $normalized.$name -Depth 12 -Compress
     if ($left -cne $right) { throw "MSI/JSON table mismatch: $name" }

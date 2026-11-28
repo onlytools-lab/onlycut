@@ -1,0 +1,303 @@
+{
+  "method": "AI-operated real installed GUI, visually inspected screenshots; not CLI smoke or human sign-off",
+  "setup": {
+    "msiSha256": "5AAB9B685B8C65C703EB61B80C219C20B977C8104FD8DEDCD9BE1C36D653886A",
+    "installExitCode": 0,
+    "sourceImageSha256": "CF7C609A9F08CE4947979A2418540A94980AC379A039FFE9AE6B59495DEF58AB",
+    "appliedDpi": 96
+  },
+  "actualMsiDatabase": {
+    "Properties": {
+      "Manufacturer": "CutPic",
+      "ProductName": "CutPic",
+      "SecureCustomProperties": "ONLYCUT_SAME_VERSION_FOUND;WIX_DOWNGRADE_DETECTED;WIX_UPGRADE_DETECTED",
+      "UpgradeCode": "{6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A}",
+      "ProductCode": "{2CE48ACB-DC32-41E7-B5F5-D482C2AD3B04}",
+      "ProductVersion": "1.0.1",
+      "ARPPRODUCTICON": "CutPicIcon",
+      "ARPNOREPAIR": "1",
+      "ALLUSERS": "1",
+      "ProductLanguage": "2052"
+    },
+    "SummaryTemplate": "x64;2052"
+  },
+  "finalNormalExitCode": 0,
+  "sources": [
+    {
+      "name": "clothing_01.png",
+      "sha256": "cf7c609a9f08ce4947979a2418540a94980ac379a039ffe9ae6b59495def58ab"
+    },
+    {
+      "name": "clothing.png",
+      "sha256": "cf7c609a9f08ce4947979a2418540a94980ac379a039ffe9ae6b59495def58ab"
+    }
+  ],
+  "project": {
+    "name": "gui-test.cutpic",
+    "sha256": "119be84797b2c57cc72be146482f907ba84545f889bc0529581cabd58642b8f3",
+    "taskCount": 2,
+    "regionsPerTask": [
+      9,
+      9
+    ]
+  },
+  "settings": {
+    "ConflictPolicyIndex": 1,
+    "LanguageCode": "zh-CN",
+    "AutoRestoreSession": false,
+    "FormatIndex": 0
+  },
+  "outputs": [
+    {
+      "name": "clothing_01 (1).png",
+      "size": 221113,
+      "width": 512,
+      "height": 512,
+      "sha256": "62545cf8fe3dec748d43abf72948135c1800cb16db3909530b5ba1c50598c42e",
+      "modifiedUtc": "2026-11-28T11:50:36.7421399Z"
+    },
+    {
+      "name": "clothing_01.png",
+      "size": 221113,
+      "width": 512,
+      "height": 512,
+      "sha256": "62545cf8fe3dec748d43abf72948135c1800cb16db3909530b5ba1c50598c42e",
+      "modifiedUtc": "2026-11-28T11:53:17.4444223Z"
+    },
+    {
+      "name": "clothing_02 (1).png",
+      "size": 172872,
+      "width": 512,
+      "height": 512,
+      "sha256": "e1bb01ee2f4855b26e3202b944f707cbaa06a0d9a50d679eaea02837e20e712b",
+      "modifiedUtc": "2026-11-28T11:50:36.7660805Z"
+    },
+    {
+      "name": "clothing_02.png",
+      "size": 172872,
+      "width": 512,
+      "height": 512,
+      "sha256": "e1bb01ee2f4855b26e3202b944f707cbaa06a0d9a50d679eaea02837e20e712b",
+      "modifiedUtc": "2026-11-28T11:53:17.4654232Z"
+    },
+    {
+      "name": "clothing_03 (1).png",
+      "size": 190810,
+      "width": 512,
+      "height": 512,
+      "sha256": "ec84a8f7d63c5af8d1241d0c87904f2f479e6445713a53e0b3134e7ae766c8ef",
+      "modifiedUtc": "2026-11-28T11:50:36.7890815Z"
+    },
+    {
+      "name": "clothing_03.png",
+      "size": 190810,
+      "width": 512,
+      "height": 512,
+      "sha256": "ec84a8f7d63c5af8d1241d0c87904f2f479e6445713a53e0b3134e7ae766c8ef",
+      "modifiedUtc": "2026-11-28T11:53:17.4859475Z"
+    },
+    {
+      "name": "clothing_04 (1).png",
+      "size": 258521,
+      "width": 512,
+      "height": 512,
+      "sha256": "454c3f9ac4d0fe9258c9716e4a9b16ff66f8620fc5b177e3594a2afea6781acf",
+      "modifiedUtc": "2026-11-28T11:50:36.8150781Z"
+    },
+    {
+      "name": "clothing_04.png",
+      "size": 258521,
+      "width": 512,
+      "height": 512,
+      "sha256": "454c3f9ac4d0fe9258c9716e4a9b16ff66f8620fc5b177e3594a2afea6781acf",
+      "modifiedUtc": "2026-11-28T11:53:17.5154801Z"
+    },
+    {
+      "name": "clothing_05 (1).png",
+      "size": 206573,
+      "width": 512,
+      "height": 512,
+      "sha256": "04450f58c6d2ff2ab1a9f32ecfc8de1712e594ebf5e09a89df825fbde834809e",
+      "modifiedUtc": "2026-11-28T11:50:36.8410774Z"
+    },
+    {
+      "name": "clothing_05.png",
+      "size": 206573,
+      "width": 512,
+      "height": 512,
+      "sha256": "04450f58c6d2ff2ab1a9f32ecfc8de1712e594ebf5e09a89df825fbde834809e",
+      "modifiedUtc": "2026-11-28T11:53:17.5600398Z"
+    },
+    {
+      "name": "clothing_06 (1).png",
+      "size": 197132,
+      "width": 512,
+      "height": 512,
+      "sha256": "8cb70dc9e05881909cd3718280501663b42699ff29f0e113a50476122c15e257",
+      "modifiedUtc": "2026-11-28T11:50:36.8630801Z"
+    },
+    {
+      "name": "clothing_06.png",
+      "size": 197132,
+      "width": 512,
+      "height": 512,
+      "sha256": "8cb70dc9e05881909cd3718280501663b42699ff29f0e113a50476122c15e257",
+      "modifiedUtc": "2026-11-28T11:53:17.5885631Z"
+    },
+    {
+      "name": "clothing_07 (1).png",
+      "size": 227284,
+      "width": 512,
+      "height": 512,
+      "sha256": "5fb96562430ef84a3ad78c6b610e1e04359d29163096967bd7deca0a7187c4e4",
+      "modifiedUtc": "2026-11-28T11:50:36.8830800Z"
+    },
+    {
+      "name": "clothing_07.png",
+      "size": 227284,
+      "width": 512,
+      "height": 512,
+      "sha256": "5fb96562430ef84a3ad78c6b610e1e04359d29163096967bd7deca0a7187c4e4",
+      "modifiedUtc": "2026-11-28T11:53:17.6135593Z"
+    },
+    {
+      "name": "clothing_08 (1).png",
+      "size": 152019,
+      "width": 512,
+      "height": 512,
+      "sha256": "f3e468881641cb9e250a20fe4ac185fbcaad5739db70f37cfc72df226c50c1fb",
+      "modifiedUtc": "2026-11-28T11:50:36.9020766Z"
+    },
+    {
+      "name": "clothing_08.png",
+      "size": 152019,
+      "width": 512,
+      "height": 512,
+      "sha256": "f3e468881641cb9e250a20fe4ac185fbcaad5739db70f37cfc72df226c50c1fb",
+      "modifiedUtc": "2026-11-28T11:53:17.6395593Z"
+    },
+    {
+      "name": "clothing_09 (1).png",
+      "size": 134795,
+      "width": 512,
+      "height": 512,
+      "sha256": "5231c84d182b746a0b67171e81565281de0fddd80f44580c048d2820766dcfd2",
+      "modifiedUtc": "2026-11-28T11:50:36.9194682Z"
+    },
+    {
+      "name": "clothing_09.png",
+      "size": 134795,
+      "width": 512,
+      "height": 512,
+      "sha256": "5231c84d182b746a0b67171e81565281de0fddd80f44580c048d2820766dcfd2",
+      "modifiedUtc": "2026-11-28T11:53:17.6595591Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "01-startup.png",
+      "size": 145392,
+      "sha256": "75caec62964c10750a6d9db59f72be8cd6932b608fc9fd0f3b076d02b2baf319"
+    },
+    {
+      "name": "02-import-recognized.png",
+      "size": 202852,
+      "sha256": "5d66ecb78f62cd3a6fb7d26b4651c5db8180d55f32259a369c28a85bcd6cb30d"
+    },
+    {
+      "name": "03-nine-slices.png",
+      "size": 200884,
+      "sha256": "774b4e81115cc14d76097f3da8cd12060d8fd07d3e9469ea1c83cb1c105457ac"
+    },
+    {
+      "name": "04-export-overview.png",
+      "size": 197620,
+      "sha256": "566989425311793a2008f7a4fd1e4879e512057062233ea8a4e52ecd33dea1bc"
+    },
+    {
+      "name": "05-export-result.png",
+      "size": 189882,
+      "sha256": "88442b6273eea340140e466c2cc87e887f86a6d2894f4400bd16ab246f57e9ee"
+    },
+    {
+      "name": "06-settings.png",
+      "size": 187453,
+      "sha256": "bb541dc6841ff6d6999cf5e7d1f169a6840dac279b280eb2b29f197d84ae81a8"
+    },
+    {
+      "name": "07-rename-overview.png",
+      "size": 201759,
+      "sha256": "fa923a4418ccf45d829aa3691de5be074e4a370cc2337f7956e9f15af0b0f6e6"
+    },
+    {
+      "name": "08-renamed-files.png",
+      "size": 207690,
+      "sha256": "e8466854e8ffc2497c6d3f5a917632c16ada0051ed50010774efe6f699927a82"
+    },
+    {
+      "name": "09-rename-result.png",
+      "size": 190111,
+      "sha256": "3aec087b0d3de712e2a8414a94ec09b996d2314f2e1b91283260160558129f1c"
+    },
+    {
+      "name": "10-skip-preflight.png",
+      "size": 201723,
+      "sha256": "ead251a57a465436469088546fbe7784ba578a6bf13533fb8a8ee85903e202a2"
+    },
+    {
+      "name": "11-skip-overview.png",
+      "size": 205082,
+      "sha256": "7ced089b04f675c26bcac5854aea07c92ab2b03ba25570793c7050f4783a788f"
+    },
+    {
+      "name": "12-skip-result.png",
+      "size": 190159,
+      "sha256": "7511ecc2b20109b4076e96a2bbd3c912e5b30644f0ae8cf19b5259c2f49c8d88"
+    },
+    {
+      "name": "13-overwrite-preflight.png",
+      "size": 201705,
+      "sha256": "611a887f507dafa182d228d2f2523b40a9935916a783751c0f9831d43276dbe5"
+    },
+    {
+      "name": "14-overwrite-result.png",
+      "size": 189946,
+      "sha256": "eda4ad34d00cf1ab5fecce5ced4dcad493f8aadffd3db6589d28522435705f46"
+    },
+    {
+      "name": "15-source-protection.png",
+      "size": 204758,
+      "sha256": "296362e0c704f5524a876750fa22155dfc45f406444b06ea7d8839904b0fc7b8"
+    },
+    {
+      "name": "16-project-saved.png",
+      "size": 205081,
+      "sha256": "30a828872682475d101b10459ea055ba37ef15461f04b01a8265118fd29126e2"
+    },
+    {
+      "name": "17-project-restored.png",
+      "size": 191876,
+      "sha256": "d036fd343cf33178a0e85e185fe95580806040ad8434c9251728fcda2b0bf78e"
+    },
+    {
+      "name": "18-settings-restored.png",
+      "size": 181281,
+      "sha256": "477b49b49c08b9e1c3bb5610371fad06a71d94737d439e3975af6e73e62d9680"
+    },
+    {
+      "name": "19-appearance-language.png",
+      "size": 170791,
+      "sha256": "ced0fab9c23c6c9f2bbf88c20c495867a2866d1559e15fdfef0219a2a74aec07"
+    },
+    {
+      "name": "20-shortcuts.png",
+      "size": 180116,
+      "sha256": "4a0decd4fbe7cbc3391f3267bda9adbd8e832ab3415b6b49210645940a9c10ad"
+    },
+    {
+      "name": "21-maximized-100dpi.png",
+      "size": 175540,
+      "sha256": "a4ef3fb9834d5c70d17b742d8344f8d4ec6bd0f080a72b1bd8af52d2ec17da5f"
+    }
+  ]
+}
