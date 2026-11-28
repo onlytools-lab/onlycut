@@ -1,0 +1,88 @@
+{
+  "crossVersionUpgrade": "NOT TESTED",
+  "status": "FAIL",
+  "stages": {
+    "historical-install": {
+      "status": "PASS",
+      "actual": {
+        "exeSha256": "68BBFA28E61FE4B67831CD87EE55F1BE7CC580594F1600ED7C334C24A65F38A2",
+        "historical": 5,
+        "candidate": -1,
+        "exeExists": true
+      },
+      "exitCode": 0
+    },
+    "historical-launch": {
+      "status": "PASS",
+      "actual": {
+        "exeSha256": "68BBFA28E61FE4B67831CD87EE55F1BE7CC580594F1600ED7C334C24A65F38A2",
+        "historical": 5,
+        "candidate": -1,
+        "exeExists": true
+      },
+      "exitCode": 0
+    },
+    "same-version-attempt": {
+      "status": "FAIL",
+      "error": "Same-version candidate did not safely reject without coexistence/replacement",
+      "actual": {
+        "exeSha256": "68BBFA28E61FE4B67831CD87EE55F1BE7CC580594F1600ED7C334C24A65F38A2",
+        "historical": 5,
+        "candidate": 5,
+        "exeExists": true
+      },
+      "exitCode": 0,
+      "behavior": "COEXISTENCE"
+    },
+    "historical-uninstall": {
+      "status": "PASS",
+      "actual": {
+        "exeSha256": "68BBFA28E61FE4B67831CD87EE55F1BE7CC580594F1600ED7C334C24A65F38A2",
+        "historical": -1,
+        "candidate": 5,
+        "exeExists": true
+      },
+      "exitCode": 0
+    },
+    "candidate-install": {
+      "status": "PASS",
+      "actual": {
+        "exeSha256": "8891889C37A658F8F2AED5A4C7E57A9A07E8A33DFCAFD29AAED16F25ED8E58BF",
+        "historical": -1,
+        "candidate": 5,
+        "exeExists": true
+      },
+      "exitCode": 0
+    },
+    "candidate-launch": {
+      "status": "PASS",
+      "actual": {
+        "exeSha256": "8891889C37A658F8F2AED5A4C7E57A9A07E8A33DFCAFD29AAED16F25ED8E58BF",
+        "historical": -1,
+        "candidate": 5,
+        "exeExists": true
+      },
+      "exitCode": 0
+    },
+    "candidate-uninstall": {
+      "status": "PASS",
+      "actual": {
+        "exeSha256": null,
+        "historical": -1,
+        "candidate": -1,
+        "exeExists": false
+      },
+      "exitCode": 0
+    },
+    "data-retention": {
+      "status": "PASS",
+      "actual": {
+        "namingSuffix": "sandbox-retention",
+        "fixture.cutpic": "D9172D20DE5A5A13F9CADE3A1B11BA1ACF2E8707C794321F54C46B8896E267C3",
+        "retention-marker.txt": "E17FA1DEBD747A1F6FBE30738F4F8EDCB3B1AEC6635B22D0548A3EB032FFA396"
+      },
+      "exitCode": null
+    }
+  },
+  "manualGUI": "NOT TESTED"
+}

@@ -29,8 +29,10 @@ jobs:
         shell: pwsh
         run: |
           [xml]$props = Get-Content Directory.Build.props
-          python scripts/validate_candidate.py artifacts/candidate --version $props.Project.PropertyGroup.Version --commit $env:GITHUB_SHA
-          if ($LASTEXITCODE -ne 0) { throw 'Candidate validation failed' }
+          ./scripts/verify-msi-candidate.ps1 -Directory artifacts/candidate -Version $props.Project.PropertyGroup.Version -Commit $env:GITHUB_SHA
+      - name: Verify actual MSI and reject forged sidecars
+        shell: pwsh
+        run: ./scripts/test-msi-verifier.ps1 -Directory artifacts/candidate
       - uses: actions/upload-artifact@v4
         with:
           name: OnlyCut-candidate-${{ github.sha }}

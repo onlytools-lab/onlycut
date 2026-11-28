@@ -103,9 +103,33 @@ public partial class App
                 try { ImageProcessingService.LoadImage(corrupt); throw new InvalidOperationException("Corrupt image accepted"); }
                 catch (Exception ex) when (ex is not InvalidOperationException) { }
             });
+            Check("two-task cross-source protection and actual rename/skip/overwrite writes", () =>
+            {
+                string a = Path.Combine(directory, "task-a.png"), b = Path.Combine(directory, "task-b.png");
+                File.Copy(source, a); File.Copy(source, b);
+                var window = new MainWindow();
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(MainWindow).GetMethod("AddFiles", flags)!.Invoke(window, [new[] { a, b }]);
+                var tasks = (System.Collections.ICollection)typeof(MainWindow).GetField("_tasks", flags)!.GetValue(window)!;
+                if (tasks.Count != 2) throw new InvalidDataException("Regression requires two loaded tasks");
+                var save = typeof(MainWindow).GetMethod("SaveExportOutput", flags)!;
+                var output = ImageProcessingService.CreateSquare(Fixture(false), new Rect(0,0,600,800), 64, false, Colors.Red);
+                string Hash(string path) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)));
+                string originalA = Hash(a), originalB = Hash(b);
+                bool Write(string path, int policy) => (bool)save.Invoke(window, [output, path, policy, "PNG", 92])!;
+                if (!Write(b, 0) || !File.Exists(Path.Combine(directory, "task-b (1).png"))) throw new InvalidDataException("Rename failed");
+                if (Write(b, 2)) throw new InvalidDataException("Skip wrote to source");
+                try { Write(b, 1); throw new InvalidDataException("Cross-task overwrite accepted"); }
+                catch (TargetInvocationException ex) when (ex.InnerException is IOException) { }
+                if (Hash(a) != originalA || Hash(b) != originalB) throw new InvalidDataException("Source changed");
+                string ordinary = Path.Combine(directory, "ordinary.png"); File.Copy(source, ordinary);
+                if (Write(ordinary, 2) || Hash(ordinary) != originalA) throw new InvalidDataException("Ordinary skip failed");
+                if (!Write(ordinary, 0) || Hash(ordinary) != originalA || !File.Exists(Path.Combine(directory, "ordinary (1).png"))) throw new InvalidDataException("Ordinary rename failed");
+                if (!Write(ordinary, 1) || Hash(ordinary) == originalA || ImageProcessingService.LoadImage(ordinary).PixelWidth != 64) throw new InvalidDataException("Ordinary overwrite failed");
+            });
         }
         finally { Environment.SetEnvironmentVariable("CUTPIC_DATA_DIR", previous); }
-        report.Add(failures == 0 ? "RESULT: PASSED (5 groups)" : $"RESULT: FAILED ({failures})");
+        report.Add(failures == 0 ? "RESULT: PASSED (6 groups)" : $"RESULT: FAILED ({failures})");
         AtomicFileService.WriteAllText(reportPath, string.Join(Environment.NewLine, report));
         // Keep fixtures outside user data; async thumbnail tasks may still hold them until exit.
         return failures == 0 ? 0 : 1;

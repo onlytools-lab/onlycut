@@ -1,4 +1,6 @@
-"""Validate a downloaded candidate without installing it; no external packages."""
+"""Check file/JSON consistency only. On Windows use verify-msi-candidate.ps1
+to independently reopen the actual MSI. Adjacent JSON is not trusted metadata.
+"""
 import argparse
 import hashlib
 import json

@@ -47,4 +47,6 @@ $validationArgs = @((Join-Path $root 'scripts/validate_candidate.py'), $output, 
 if ($dirty) { $validationArgs += '--allow-dirty' }
 python @validationArgs
 if ($LASTEXITCODE -ne 0) { throw 'Final candidate integrity validation failed' }
+$verifyArgs = @{ Directory=$output; Version=$version; Commit=$commit; AllowDirty=$dirty }
+& (Join-Path $root 'scripts/verify-msi-candidate.ps1') @verifyArgs
 Write-Host "Validated candidate: $msi"
