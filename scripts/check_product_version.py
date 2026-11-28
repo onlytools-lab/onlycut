@@ -6,6 +6,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import re
+from check_installer_policy import check_source
 
 def check(version, files):
     if not files:
@@ -57,6 +58,7 @@ def main():
         if files is None:
             files = ["package.json", "src-tauri/tauri.conf.json"]
         check(args.version, files)
+        check_source()
     except (OSError, ValueError, ET.ParseError) as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 1

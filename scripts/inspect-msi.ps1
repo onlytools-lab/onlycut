@@ -23,5 +23,7 @@ foreach ($row in (Read-Rows 'SELECT `Property`, `Value` FROM `Property`' 2)) { $
     Directories = (Read-Rows 'SELECT `Directory`, `Directory_Parent`, `DefaultDir` FROM `Directory`' 3)
     Files = (Read-Rows 'SELECT `File`, `Component_`, `FileName`, `Version` FROM `File`' 4)
     LaunchConditions = (Read-Rows 'SELECT `Condition`, `Description` FROM `LaunchCondition`' 2)
+    ExecuteSequence = (Read-Rows 'SELECT `Action`, `Condition`, `Sequence` FROM `InstallExecuteSequence`' 3)
+    UISequence = (Read-Rows 'SELECT `Action`, `Condition`, `Sequence` FROM `InstallUISequence`' 3)
     SummaryTemplate = $database.SummaryInformation(0).Property(7)
 }

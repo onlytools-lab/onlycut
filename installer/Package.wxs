@@ -3,6 +3,14 @@
            UpgradeCode="6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A" Scope="perMachine">
     <SummaryInformation Description="CutPic 智能切图工具" Manufacturer="CutPic"/>
     <MajorUpgrade DowngradeErrorMessage="已安装更新版本的 CutPic。"/>
+    <!-- Detect only: do not uninstall or migrate an equal-version product. -->
+    <Upgrade Id="6E02C1AA-9A9D-4CB1-8F6F-37AD338F316A">
+      <UpgradeVersion Minimum="$(var.ProductVersion)" Maximum="$(var.ProductVersion)"
+                      IncludeMinimum="yes" IncludeMaximum="yes" OnlyDetect="yes"
+                      Property="ONLYCUT_SAME_VERSION_FOUND"/>
+    </Upgrade>
+    <Launch Condition="Installed OR NOT ONLYCUT_SAME_VERSION_FOUND"
+            Message="ONLYCUT_SAME_VERSION_BLOCKED: 已安装相同版本的 CutPic。请使用已安装产品的维护入口，或安装更高版本。"/>
     <MediaTemplate EmbedCab="yes" CompressionLevel="high"/>
     <Icon Id="CutPicIcon" SourceFile="$(var.RootDir)\CutPic.ico"/>
     <Property Id="ARPPRODUCTICON" Value="CutPicIcon"/>

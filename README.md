@@ -21,7 +21,7 @@ CutPic 是一款面向 Windows 的轻量级离线切图工具，用于把 AI 生
 
 ## 下载与安装
 
-下载：[GitHub Releases](https://github.com/onlytools-lab/onlycut/releases)。当前版本保持 **1.0.0**。工程治理候选包不代表新正式版本，不替换历史附件。
+下载：[GitHub Releases](https://github.com/onlytools-lab/onlycut/releases)。当前已发布版本为 **1.0.0**。本开发分支的 **1.0.1 仅为升级测试候选**，尚未获准正式发布，不替换历史附件。
 
 ### 使用安装包
 
@@ -428,6 +428,6 @@ CutPic 不需要网络即可完成图片处理。应用日志记录运行事件�
 
 ## 版本与候选发布治理
 
-`Directory.Build.props` 是产品版本唯一来源：`1.0.0` 映射程序集与文件版本 `1.0.0.0`，并传入 WiX ProductVersion。MSI 限制 major/minor ≤255、build ≤65535；不通过第四段区分升级版本。
+`Directory.Build.props` 是产品版本唯一来源：本分支测试版本 `1.0.1` 映射程序集与文件版本 `1.0.1.0`，并传入 WiX ProductVersion。MSI 限制 major/minor ≤255、build ≤65535；不通过第四段区分升级版本。
 
 SDK 由 `global.json` 选择 .NET 10.0.402，并只允许同 feature band 的补丁滚动。候选工作流仅通过 Actions Artifact 保存 MSI、元数据和 SHA-256；不创建 Tag 或 Release。详细流程见 `docs/release-process.md`。

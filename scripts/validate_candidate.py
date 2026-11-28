@@ -4,6 +4,7 @@ to independently reopen the actual MSI. Adjacent JSON is not trusted metadata.
 import argparse
 import hashlib
 import json
+from check_installer_policy import check_metadata
 from pathlib import Path
 
 
@@ -35,6 +36,7 @@ def validate(directory, version, commit, allow_dirty=False):
             or props['ProductCode'] != manifest['productCode'] or not metadata['Components']
             or not metadata['Upgrades'] or not metadata['SummaryTemplate'].startswith('x64;')):
         raise ValueError('MSI metadata mismatch')
+    check_metadata(metadata, version)
     return digest
 
 
