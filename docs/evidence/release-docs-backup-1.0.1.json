@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "checkedAtUtc": "2026-11-28T13:16:56.0949617Z",
+  "status": "PASS",
+  "masterBaseline": "97879dd00ac1a6277175b9bc6e6fc0176f028c51",
+  "source": {
+    "artifactId": 15260753305,
+    "workflowRunId": 46139159100,
+    "sourceCommit": "8715a40208114f0b444245e2010fc4cea47db963",
+    "expiredAtCheck": false,
+    "artifactExpiresAt": "2027-02-26T11:17:17Z",
+    "githubZipDigest": "sha256:52eb5280ed6e3c1d07335cb26b4b4fef86d491aafe3911d68c4dd0c283fcf6f1",
+    "localDownload": "artifacts/draft-preflight-20261128",
+    "url": "https://github.com/onlytools-lab/onlycut/actions/runs/46139159100/artifacts/15260753305"
+  },
+  "repositoryPhysicalDiskNumber": 0,
+  "backups": [
+    {
+      "location": "C:/OnlyCut-Release-Backups/v1.0.1/artifact-15260753305",
+      "outsideRepository": true,
+      "physicalDiskNumber": 2,
+      "diskModel": "Samsung SSD 870 EVO 1TB",
+      "busType": "SATA",
+      "fileCount": 5,
+      "files": [
+        {
+          "name": "original-15260753305.zip",
+          "size": 52389307,
+          "sha256": "52eb5280ed6e3c1d07335cb26b4b4fef86d491aafe3911d68c4dd0c283fcf6f1",
+          "status": "PASS"
+        },
+        {
+          "name": "CutPic-Setup-x64.msi",
+          "size": 52610127,
+          "sha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+          "status": "PASS"
+        },
+        {
+          "name": "candidate-manifest.json",
+          "size": 432,
+          "sha256": "5ca5db7bcc382f7a48a261d4beb9da5534485f8d9b4a359a2073ee23290a069c",
+          "status": "PASS"
+        },
+        {
+          "name": "msi-metadata.json",
+          "size": 146671,
+          "sha256": "7a4f8c73837c34a55604a7ca1589097d5cc61b9bd14e7246011e23bbd5d70304",
+          "status": "PASS"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 88,
+          "sha256": "fba17957c3fff62145020c7c717888d8d0e7b1c38b4bbdd67c35df4503ef2fe6",
+          "status": "PASS"
+        }
+      ],
+      "zipEntriesRehashed": true,
+      "sourceManifestChecked": true,
+      "status": "PASS"
+    },
+    {
+      "location": "E:/OnlyCut-Release-Backups/v1.0.1/artifact-15260753305",
+      "outsideRepository": true,
+      "physicalDiskNumber": 1,
+      "diskModel": "TOSHIBA HDWD120",
+      "busType": "SATA",
+      "fileCount": 5,
+      "files": [
+        {
+          "name": "original-15260753305.zip",
+          "size": 52389307,
+          "sha256": "52eb5280ed6e3c1d07335cb26b4b4fef86d491aafe3911d68c4dd0c283fcf6f1",
+          "status": "PASS"
+        },
+        {
+          "name": "CutPic-Setup-x64.msi",
+          "size": 52610127,
+          "sha256": "5aab9b685b8c65c703eb61b80c219c20b977c8104fd8dedcd9be1c36d653886a",
+          "status": "PASS"
+        },
+        {
+          "name": "candidate-manifest.json",
+          "size": 432,
+          "sha256": "5ca5db7bcc382f7a48a261d4beb9da5534485f8d9b4a359a2073ee23290a069c",
+          "status": "PASS"
+        },
+        {
+          "name": "msi-metadata.json",
+          "size": 146671,
+          "sha256": "7a4f8c73837c34a55604a7ca1589097d5cc61b9bd14e7246011e23bbd5d70304",
+          "status": "PASS"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 88,
+          "sha256": "fba17957c3fff62145020c7c717888d8d0e7b1c38b4bbdd67c35df4503ef2fe6",
+          "status": "PASS"
+        }
+      ],
+      "zipEntriesRehashed": true,
+      "sourceManifestChecked": true,
+      "status": "PASS"
+    }
+  ],
+  "failureIndependence": {
+    "separatePhysicalDisks": true,
+    "bothSeparateFromRepositoryDisk": true,
+    "singleDiskFailureCovered": true,
+    "offsite": false,
+    "offline": false,
+    "sharedRisks": [
+      "same host",
+      "shared power/controller/OS exposure",
+      "malware/ransomware",
+      "theft/fire or other site-wide disaster"
+    ],
+    "claim": "Two separately reopened and verified copies on distinct physical devices, not independent offsite disaster recovery."
+  },
+  "msiRebuilt": false,
+  "msiResigned": false,
+  "installerExecuted": false,
+  "releaseObjectsCreated": false
+}
